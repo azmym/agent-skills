@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "organization": "Mahmoud Azmy",
+  "date": "February 2026",
+  "abstract": "Interact with Slack via the Web API — read, summarize, search, post messages, react, pin, and manage channels. Extracts browser session tokens from Chrome automatically.",
+  "references": ["https://api.slack.com/methods"]
+}
