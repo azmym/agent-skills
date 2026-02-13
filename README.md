@@ -69,43 +69,25 @@ uvx --version
 
 ## Installation
 
-### Claude Code
+The `skills` CLI installs skills into `~/.agents/skills/` and symlinks them to each agent's directory automatically.
+
+### Claude Code only
 
 ```bash
 npx skills add azmym/agent-skills
 ```
 
-The skill is installed into `~/.claude/skills/slack/` and loaded automatically.
+### All supported agents (Claude Code, Cursor, Codex, etc.)
 
-### Cursor
+```bash
+npx skills add azmym/agent-skills --agent '*'
+```
 
-1. Clone or download this repository:
+### Specific agents
 
-   ```bash
-   git clone https://github.com/azmym/agent-skills.git
-   ```
-
-2. Copy the skill files into your Cursor rules directory:
-
-   ```bash
-   mkdir -p ~/.cursor/skills/slack
-   cp -r agent-skills/skills/slack/* ~/.cursor/skills/slack/
-   ```
-
-3. Add the skill to your Cursor rules. Create or edit `.cursorrules` in your project root:
-
-   ```
-   @file ~/.cursor/skills/slack/SKILL.md
-   ```
-
-   Alternatively, add the content of `SKILL.md` directly into your `.cursorrules` or `.cursor/rules/` directory.
-
-4. Make the scripts executable:
-
-   ```bash
-   chmod +x ~/.cursor/skills/slack/scripts/slack-api.sh
-   chmod +x ~/.cursor/skills/slack/scripts/slack-token-refresh.sh
-   ```
+```bash
+npx skills add azmym/agent-skills --agent 'Claude Code,Cursor'
+```
 
 ## How It Works
 
