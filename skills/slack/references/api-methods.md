@@ -1,7 +1,9 @@
 # Slack Web API Methods Reference
 
 Full reference for all supported Slack Web API methods via the skill's API wrapper.
-All methods use: `~/.claude/skills/slack/scripts/slack-api.sh <method> [key=value ...]`
+All methods use: `{SKILL_DIR}/scripts/slack-api.sh <method> [key=value ...]`
+
+Where `{SKILL_DIR}` is the base directory provided when this skill is loaded (e.g., `~/.agents/skills/slack`).
 
 ## Table of Contents
 
