@@ -6,7 +6,7 @@ A collection of skills for AI coding agents.
 
 ### Slack
 
-Interact with Slack directly from your AI coding agent — read, summarize, search, post messages, react, pin, and manage channels using the Slack Web API.
+Interact with Slack directly from your AI coding agent: read, summarize, search, post messages, react, pin, and manage channels using the Slack Web API.
 
 Tokens are extracted automatically from your running Chrome browser. No Slack app creation or OAuth setup required.
 
@@ -37,7 +37,7 @@ Chrome must be running with Slack open in a tab.
 Required for the skill to extract your session token from Chrome.
 
 1. Open Chrome
-2. Go to **View → Developer → Allow JavaScript from Apple Events**
+2. Go to **View > Developer > Allow JavaScript from Apple Events**
 3. Confirm the prompt
 4. This setting must stay enabled
 
@@ -92,8 +92,8 @@ npx skills add azmym/agent-skills --agent 'Claude Code,Cursor'
 ## How It Works
 
 1. On the first API call, the skill automatically extracts two session tokens from Chrome:
-   - **xoxc** — from Slack's `localStorage` via AppleScript
-   - **xoxd** — from Chrome's cookie database via `pycookiecheat`
+   - **xoxc**: from Slack's `localStorage` via AppleScript
+   - **xoxd**: from Chrome's cookie database via `pycookiecheat`
 2. Tokens are saved to `~/.claude/slack-tokens.env`
 3. If a token expires (`invalid_auth`), the skill auto-refreshes and retries
 
@@ -108,7 +108,7 @@ Once installed, just ask your agent naturally:
 | "Summarize #engineering from today" | Reads channel history and summarizes |
 | "What did John say in #standup this week?" | Searches messages by user and channel |
 | "Post 'deploy complete' in #releases" | Sends a message to the channel |
-| "React with 👍 to that message" | Adds an emoji reaction |
+| "React with thumbsup to that message" | Adds an emoji reaction |
 | _Paste a Slack URL_ | Reads the message or thread at that URL |
 | "Search Slack for deployment errors" | Searches across all channels |
 | "Pin that message" | Pins the referenced message |

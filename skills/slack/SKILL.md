@@ -1,11 +1,11 @@
 ---
 name: slack
-description: Interact with Slack via the Web API — read, summarize, search, post messages, react, pin, and manage channels. Use when the user (1) shares a Slack URL, (2) asks to read or summarize a channel, (3) searches Slack messages, (4) asks to send/post a message, (5) asks to react to or pin a message, (6) looks up a user, or (7) mentions a Slack channel by name (e.g., "#channel-name"). Also triggers for Slack threads, daily standups, conversation digests, or any Slack interaction.
+description: Interact with Slack via the Web API. Read, summarize, search, post messages, react, pin, and manage channels. Use when the user (1) shares a Slack URL, (2) asks to read or summarize a channel, (3) searches Slack messages, (4) asks to send/post a message, (5) asks to react to or pin a message, (6) looks up a user, or (7) mentions a Slack channel by name (e.g., "#channel-name"). Also triggers for Slack threads, daily standups, conversation digests, or any Slack interaction.
 ---
 
 # Slack Web API Skill
 
-Interact with Slack — read, write, search, react, pin, and manage conversations via the Web API.
+Interact with Slack: read, write, search, react, pin, and manage conversations via the Web API.
 
 ## API Wrapper
 
@@ -113,7 +113,7 @@ Then use the Read tool to view the downloaded image.
 ## Output Formatting
 
 1. Parse JSON with python3 -c "import sys,json; ..."
-2. Resolve user IDs (U...) to real names via users.info — cache lookups
+2. Resolve user IDs (U...) to real names via users.info (cache lookups)
 3. Present messages with timestamps and names
 4. Replace <@U...> mentions with resolved real names
 5. Decode Slack markup (entities, link syntax, channel references) to plain text
@@ -121,7 +121,7 @@ Then use the Read tool to view the downloaded image.
 ## Rate Limiting
 
 - Add sleep 1 between consecutive API calls
-- Never bulk-paginate large datasets (users.list) — kills the session
+- Never bulk-paginate large datasets (users.list), it kills the session
 - Prefer targeted queries over bulk fetches
 
 ## Token Refresh (Automatic)
@@ -135,7 +135,7 @@ Tokens are extracted from the running Chrome browser:
 - xoxd: from Chrome's cookie database via `lsof` + `pycookiecheat`
 
 Prerequisites (one-time):
-- Chrome -> View -> Developer -> Allow JavaScript from Apple Events (must stay enabled)
+- Chrome > View > Developer > Allow JavaScript from Apple Events (must stay enabled)
 - Slack open in a Chrome tab at app.slack.com
 - `uvx` installed
 
@@ -152,6 +152,6 @@ For additional methods (bookmarks, user groups, reminders, emoji, files, user pr
 
 - not_in_channel: User does not have access to this channel
 - channel_not_found: Invalid channel ID
-- invalid_auth: Token expired — auto-refresh attempted (see Token Refresh)
+- invalid_auth: Token expired, auto-refresh attempted (see Token Refresh)
 - ratelimited: Wait and retry with sleep 5
 - cant_update_message / cant_delete_message: Can only modify own messages
