@@ -9,7 +9,11 @@ Interact with Slack — read, write, search, react, pin, and manage conversation
 
 ## API Wrapper
 
-All calls go through: `~/.claude/skills/slack/scripts/slack-api.sh <method> [key=value ...]`
+All calls go through the script at `scripts/slack-api.sh` relative to this skill's base directory:
+
+    {SKILL_DIR}/scripts/slack-api.sh <method> [key=value ...]
+
+Where `{SKILL_DIR}` is the base directory provided when this skill is loaded (e.g., `~/.agents/skills/slack`).
 
 For the full method reference, see [references/api-methods.md](references/api-methods.md).
 
