@@ -8,7 +8,15 @@ A collection of skills for AI coding agents.
 
 Interact with Slack directly from your AI coding agent: read, summarize, search, post messages, react, pin, and manage channels using the Slack Web API.
 
-Tokens are extracted automatically from your running Chrome browser. No Slack app creation or OAuth setup required.
+Supports two modes:
+
+| | Token Mode | Browser Mode |
+|---|-----------|-------------|
+| Platform | macOS only | Cross-platform (macOS, Linux, Windows) |
+| Speed | Fast (direct curl) | Slower (browser overhead) |
+| Auth | Automatic from running Chrome | One-time login in browser session |
+| Dependencies | Chrome, AppleScript, pycookiecheat | infsh CLI, agent-browser skill |
+| API coverage | Web API methods | Web API + UI automation |
 
 **Use when:**
 - User shares a Slack URL
@@ -18,54 +26,7 @@ Tokens are extracted automatically from your running Chrome browser. No Slack ap
 - User asks to react to or pin a message
 - User looks up a Slack user
 - User mentions a Slack channel by name (e.g., `#channel-name`)
-
-## Prerequisites
-
-### 1. macOS
-
-This skill relies on AppleScript and `lsof` for token extraction. It does not currently support Linux or Windows.
-
-### 2. Google Chrome
-
-Chrome must be running with Slack open in a tab.
-
-- Open **Chrome** and navigate to [app.slack.com](https://app.slack.com)
-- Sign in to your workspace
-
-### 3. Allow JavaScript from Apple Events
-
-Required for the skill to extract your session token from Chrome.
-
-1. Open Chrome
-2. Go to **View > Developer > Allow JavaScript from Apple Events**
-3. Confirm the prompt
-4. This setting must stay enabled
-
-### 4. Python 3
-
-Used for JSON parsing and cookie extraction.
-
-```bash
-python3 --version
-```
-
-If not installed:
-
-```bash
-brew install python3
-```
-
-### 5. uvx (from uv)
-
-Used to run `pycookiecheat` for extracting the session cookie from Chrome's cookie database.
-
-```bash
-# Install uv (which provides uvx)
-brew install uv
-
-# Verify
-uvx --version
-```
+- User wants to interact with Slack Canvas, Huddles, or Workflow Builder (browser mode)
 
 ## Installation
 
@@ -89,15 +50,106 @@ npx skills add azmym/agent-skills --agent '*'
 npx skills add azmym/agent-skills --agent 'Claude Code,Cursor'
 ```
 
+### Install the agent-browser skill (for browser mode)
+
+```bash
+npx skills add inference-sh-0/skills --skill agent-browser
+```
+
+## Prerequisites
+
+Choose your mode based on your platform and needs.
+
+### Token Mode (macOS)
+
+#### 1. Google Chrome
+
+Chrome must be running with Slack open in a tab.
+
+- Open **Chrome** and navigate to [app.slack.com](https://app.slack.com)
+- Sign in to your workspace
+
+#### 2. Allow JavaScript from Apple Events
+
+Required for the skill to extract your session token from Chrome.
+
+1. Open Chrome
+2. Go to **View > Developer > Allow JavaScript from Apple Events**
+3. Confirm the prompt
+4. This setting must stay enabled
+
+#### 3. Python 3
+
+Used for JSON parsing and cookie extraction.
+
+```bash
+python3 --version
+```
+
+If not installed:
+
+```bash
+brew install python3
+```
+
+#### 4. uvx (from uv)
+
+Used to run `pycookiecheat` for extracting the session cookie from Chrome's cookie database.
+
+```bash
+# Install uv (which provides uvx)
+brew install uv
+
+# Verify
+uvx --version
+```
+
+### Browser Mode (Cross-Platform)
+
+#### 1. inference.sh CLI
+
+```bash
+curl -fsSL https://cli.inference.sh | sh
+infsh login
+```
+
+#### 2. agent-browser skill
+
+```bash
+npx skills add inference-sh-0/skills --skill agent-browser
+```
+
+No Chrome, AppleScript, or pycookiecheat required.
+
 ## How It Works
+
+### Token Mode
 
 1. On the first API call, the skill automatically extracts two session tokens from Chrome:
    - **xoxc**: from Slack's `localStorage` via AppleScript
    - **xoxd**: from Chrome's cookie database via `pycookiecheat`
 2. Tokens are saved to `~/.claude/slack-tokens.env`
 3. If a token expires (`invalid_auth`), the skill auto-refreshes and retries
+4. API calls are made via `curl` directly to the Slack Web API
 
 No manual token management needed.
+
+### Browser Mode
+
+1. A persistent headless browser session is launched via the [agent-browser](https://skills.sh/inference-sh-0/skills/agent-browser) skill
+2. You log in to Slack once through the browser session (email/password or SSO)
+3. API calls execute inside the browser using `fetch()`, which automatically includes all authentication cookies
+4. The session persists across calls until you explicitly close it
+5. If no browser session is active, `slack-browser-api.sh` falls back to token mode automatically
+
+Browser mode also enables **UI automation** for Slack features that have no API:
+
+- Canvas creation and editing
+- Huddle interactions
+- Workflow Builder configuration
+- Slack Connect invitations
+- Admin and settings pages
+- Visual message verification via screenshots
 
 ## Usage Examples
 
@@ -113,8 +165,12 @@ Once installed, just ask your agent naturally:
 | "Search Slack for deployment errors" | Searches across all channels |
 | "Pin that message" | Pins the referenced message |
 | "Who is U04ABC123?" | Looks up user info by ID |
+| "Create a canvas in #project-alpha" | Uses browser mode to create a Slack Canvas |
+| "Take a screenshot of the #design channel" | Captures a visual snapshot via browser mode |
 
 ## Troubleshooting
+
+### Token Mode
 
 | Problem | Fix |
 |---|---|
@@ -124,6 +180,17 @@ Once installed, just ask your agent naturally:
 | `invalid_auth` keeps failing | Close and reopen the Slack tab in Chrome, then retry |
 | `uvx: command not found` | Install uv: `brew install uv` |
 | Scripts not executing | Run `chmod +x` on both scripts in `scripts/` |
+
+### Browser Mode
+
+| Problem | Fix |
+|---|---|
+| `infsh: command not found` | Install: `curl -fsSL https://cli.inference.sh \| sh && infsh login` |
+| `No active browser session` | Run `slack-browser-session.sh start` first |
+| Login page keeps showing | Session may have expired; run `stop` then `start` again |
+| `no_teams_found` error | Slack hasn't loaded workspace data yet; wait a few seconds and retry |
+| Slow API responses | Browser mode has overhead; for high-frequency calls on macOS, use token mode instead |
+| SSO login flow | Use `snapshot` and `interact` via agent-browser to navigate the SSO provider's form step by step |
 
 ## License
 
