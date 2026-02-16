@@ -85,9 +85,11 @@ The environment variable takes priority over the config file.
 
 ### How auto-detect works
 
-1. Check if a browser session exists (`~/.agents/config/slack/browser-session`) with a valid `storageState.json`
-2. If yes, use browser mode
-3. If no, use token mode
+1. Check if a Playwright session exists with a valid `storageState.json` under `~/.agents/config/slack/sessions/`
+2. If a valid session is found, use **browser** mode
+3. If no valid session exists, fall back to **token** mode
+
+This means you can set `SLACK_MODE=auto` and freely switch between modes: start a browser session to use browser mode, stop it to fall back to token mode, all without changing config.
 
 ## Prerequisites
 
