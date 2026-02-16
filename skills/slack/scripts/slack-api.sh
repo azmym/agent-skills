@@ -10,16 +10,18 @@
 #
 # Modes:
 #   token   - Direct curl calls using Chrome session tokens (macOS only)
-#   browser - API calls through agent-browser session (cross-platform)
+#   browser - API calls through local Playwright browser (cross-platform)
 #   auto    - Try browser if session exists, otherwise fall back to token
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BRIDGE="$SCRIPT_DIR/playwright-bridge.js"
 SLACK_CONFIG_DIR="${HOME}/.agents/config/slack"
 CONFIG_FILE="${SLACK_CONFIG_DIR}/config.env"
 TOKENS_FILE="${SLACK_CONFIG_DIR}/tokens.env"
 SESSION_FILE="${SLACK_CONFIG_DIR}/browser-session"
+SESSIONS_DIR="${SLACK_CONFIG_DIR}/sessions"
 
 # Ensure config directory exists
 mkdir -p "$SLACK_CONFIG_DIR"
@@ -32,8 +34,13 @@ SLACK_MODE="${SLACK_MODE:-auto}"
 
 # Resolve auto mode
 if [ "$SLACK_MODE" = "auto" ]; then
-  if [ -f "$SESSION_FILE" ] && command -v infsh &>/dev/null; then
-    SLACK_MODE="browser"
+  if [ -f "$SESSION_FILE" ]; then
+    SID=$(cat "$SESSION_FILE")
+    if [ -f "$SESSIONS_DIR/$SID/storageState.json" ]; then
+      SLACK_MODE="browser"
+    else
+      SLACK_MODE="token"
+    fi
   else
     SLACK_MODE="token"
   fi
@@ -80,8 +87,8 @@ run_browser() {
     echo '{"ok":false,"error":"no_browser_session","hint":"Run slack-browser-session.sh start"}' >&2
     exit 1
   fi
-  if ! command -v infsh &>/dev/null; then
-    echo '{"ok":false,"error":"infsh_not_found","hint":"Install: curl -fsSL https://cli.inference.sh | sh && infsh login"}' >&2
+  if ! command -v node &>/dev/null; then
+    echo '{"ok":false,"error":"node_not_found","hint":"Install Node.js 18+ from https://nodejs.org"}' >&2
     exit 1
   fi
 
@@ -117,12 +124,21 @@ ${PARAMS_JS}
 JSEOF
   )
 
-  JS_JSON=$(printf '%s' "$JS_CODE" | jq -Rs '.')
+  JS_JSON=$(printf '%s' "$JS_CODE" | python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))")
 
-  RESULT=$(infsh app run agent-browser --function execute --session "$SESSION_ID" \
+  RESULT=$(node "$BRIDGE" --function execute --session "$SESSION_ID" \
     --input "{\"code\": ${JS_JSON}}")
 
-  PARSED=$(echo "$RESULT" | jq -r '.result // empty' 2>/dev/null)
+  PARSED=$(echo "$RESULT" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+r = data.get('result', '')
+if isinstance(r, str):
+    print(r)
+else:
+    print(json.dumps(r))
+" 2>/dev/null)
+
   if [ -n "$PARSED" ]; then
     echo "$PARSED"
   else

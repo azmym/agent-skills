@@ -14,7 +14,7 @@ The skill supports three modes. Set via `~/.agents/config/slack/config.env` or t
 | Mode | Value | Behavior |
 |------|-------|----------|
 | Token | `token` | Direct curl calls using Chrome session tokens. Fast. macOS only. |
-| Browser | `browser` | API calls through an agent-browser session. Cross-platform. |
+| Browser | `browser` | API calls through a local Playwright browser session. Cross-platform. |
 | Auto-detect | `auto` | Use browser if a session exists, otherwise fall back to token. **(default)** |
 
 ### Configure the mode
@@ -38,10 +38,11 @@ The environment variable takes priority over the config file.
 All skill config and state lives under `~/.agents/config/slack/`:
 
 | File | Purpose |
-|------|---------|
+|------|----------|
 | `config.env` | Mode selection (`SLACK_MODE=auto\|token\|browser`) |
 | `tokens.env` | Cached session tokens (xoxc, xoxd, user-agent) |
 | `browser-session` | Active browser session ID |
+| `sessions/<id>/storageState.json` | Playwright session cookies and localStorage |
 
 This directory is created automatically on first use.
 
@@ -68,7 +69,11 @@ No manual setup needed. On first API call, tokens are extracted automatically.
 
 ## Browser Mode (Cross-Platform)
 
-Browser mode uses the `agent-browser` skill to maintain a persistent Slack session in a headless browser. API calls are made via `fetch()` inside the browser context, so no token extraction is needed. This works on macOS, Linux, and Windows.
+Browser mode uses a local Playwright Chromium instance to maintain a Slack session. API calls are made via `fetch()` inside the browser context, so no token extraction is needed. This works on macOS, Linux, and Windows.
+
+Prerequisites:
+- Node.js 18+ installed
+- Playwright auto-installs on first use (downloads Chromium, ~150 MB)
 
 For detailed documentation, see [references/browser-mode.md](references/browser-mode.md).
 
@@ -77,19 +82,20 @@ For detailed documentation, see [references/browser-mode.md](references/browser-
     # 1. Set mode to browser
     echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
 
-    # 2. Start a browser session
-    {SKILL_DIR}/scripts/slack-browser-session.sh start
+    # 2. Start a browser session and log in manually (supports SSO/2FA)
+    {SKILL_DIR}/scripts/slack-browser-session.sh login-manual
 
-    # 3. Log in (email + password)
+    # Or: automated email+password login
+    {SKILL_DIR}/scripts/slack-browser-session.sh start
     {SKILL_DIR}/scripts/slack-browser-session.sh login user@example.com mypassword
 
-    # 4. Verify login succeeded
+    # 3. Verify login succeeded
     {SKILL_DIR}/scripts/slack-browser-session.sh status
 
-    # 5. Make API calls (same script, routes through browser automatically)
+    # 4. Make API calls (same script, routes through browser automatically)
     {SKILL_DIR}/scripts/slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
 
-    # 6. Close when done
+    # 5. Close when done
     {SKILL_DIR}/scripts/slack-browser-session.sh stop
 
 ### UI Automation (API Gaps)
@@ -100,18 +106,18 @@ Browser mode also enables direct interaction with Slack's web UI for features th
     SESSION_ID=$({SKILL_DIR}/scripts/slack-browser-session.sh get)
 
     # Navigate to a specific channel
-    infsh app run agent-browser --function interact --session $SESSION_ID \
+    node {SKILL_DIR}/scripts/playwright-bridge.js --function interact --session $SESSION_ID \
       --input '{"action": "goto", "url": "https://app.slack.com/client/TEAM_ID/CHANNEL_ID"}'
 
     # Take a snapshot to see interactive elements
-    infsh app run agent-browser --function snapshot --session $SESSION_ID --input '{}'
+    node {SKILL_DIR}/scripts/playwright-bridge.js --function snapshot --session $SESSION_ID --input '{}'
 
     # Interact with UI elements using @e refs from the snapshot
-    infsh app run agent-browser --function interact --session $SESSION_ID \
+    node {SKILL_DIR}/scripts/playwright-bridge.js --function interact --session $SESSION_ID \
       --input '{"action": "click", "ref": "@e5"}'
 
     # Take a screenshot for visual verification
-    infsh app run agent-browser --function screenshot --session $SESSION_ID --input '{}'
+    node {SKILL_DIR}/scripts/playwright-bridge.js --function screenshot --session $SESSION_ID --input '{}'
 
 Use cases for UI automation:
 
@@ -215,9 +221,9 @@ Messages may contain files. In token mode:
 
 In browser mode, navigate to the file URL and screenshot:
 
-    infsh app run agent-browser --function interact --session $SESSION_ID \
+    node {SKILL_DIR}/scripts/playwright-bridge.js --function interact --session $SESSION_ID \
       --input '{"action": "goto", "url": "FILE_URL_PRIVATE"}'
-    infsh app run agent-browser --function screenshot --session $SESSION_ID --input '{"full_page": true}'
+    node {SKILL_DIR}/scripts/playwright-bridge.js --function screenshot --session $SESSION_ID --input '{}'
 
 Then use the Read tool to view the downloaded image.
 
@@ -259,35 +265,21 @@ Tokens are extracted from the running Chrome browser:
 
 ### Browser Mode (Cross-Platform)
 
-1. Install the inference.sh CLI:
-
-       curl -fsSL https://cli.inference.sh | sh && infsh login
-
-2. Install the agent-browser skill:
-
-       npx skills add inference-sh-0/skills --skill agent-browser
-
-3. Set mode and start a session:
+1. Install Node.js 18+ from https://nodejs.org
+2. Set mode and start a session:
 
        echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
-       {SKILL_DIR}/scripts/slack-browser-session.sh start
-       {SKILL_DIR}/scripts/slack-browser-session.sh login user@example.com mypassword
+       {SKILL_DIR}/scripts/slack-browser-session.sh login-manual
+
+   Playwright and Chromium install automatically on first use.
 
 ### Auto-detect (Default)
 
-No configuration needed. The skill checks for an active browser session first, and falls back to token mode if none exists.
+No configuration needed. The skill checks for an active browser session with a valid storageState first, and falls back to token mode if none exists.
 
 ## Full API Reference
 
 For additional methods (bookmarks, user groups, reminders, emoji, files, user profiles, etc.), see [references/api-methods.md](references/api-methods.md).
-
-## Related Skills
-
-    # Browser automation (required for browser mode)
-    npx skills add inference-sh-0/skills --skill agent-browser
-
-    # Web search (for research + browse)
-    npx skills add inference-sh/skills@web-search
 
 ## Error Handling
 
@@ -297,5 +289,5 @@ For additional methods (bookmarks, user groups, reminders, emoji, files, user pr
 - ratelimited: Wait and retry with sleep 5
 - cant_update_message / cant_delete_message: Can only modify own messages
 - no_browser_session: No active browser session; run slack-browser-session.sh start
-- infsh_not_found: infsh CLI not installed; see Browser Mode setup
+- node_not_found: Node.js not installed; install from https://nodejs.org
 - no_teams_found: Slack has not loaded workspace data in browser; wait and retry
