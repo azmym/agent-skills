@@ -33,19 +33,19 @@ The `skills` CLI installs skills into `~/.agents/skills/` and symlinks them to e
 ### Claude Code only
 
 ```bash
-npx skills add azmym/agent-skills
+npx skills add https://github.com/azmym/agent-skills --skill slack
 ```
 
 ### All supported agents (Claude Code, Cursor, Codex, etc.)
 
 ```bash
-npx skills add azmym/agent-skills --agent '*'
+npx skills add https://github.com/azmym/agent-skills --skill slack --agent '*'
 ```
 
 ### Specific agents
 
 ```bash
-npx skills add azmym/agent-skills --agent 'Claude Code,Cursor'
+npx skills add https://github.com/azmym/agent-skills --skill slack --agent 'Claude Code,Cursor'
 ```
 
 ### Install agent-browser (for browser mode)
