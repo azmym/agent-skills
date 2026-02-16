@@ -12,9 +12,9 @@ Supports three modes:
 
 | Mode | Config Value | Behavior |
 |------|-------------|----------|
-| **Auto-detect** | `auto` (default) | Uses browser mode if a session exists, otherwise falls back to token mode |
+| **Auto-detect** | `auto` (recommended) | Uses browser mode if a session exists, otherwise falls back to token mode |
 | **Token** | `token` | Direct curl calls using Chrome session tokens. Fast. macOS only |
-| **Browser** | `browser` | API calls through agent-browser session. Cross-platform. Also enables UI automation |
+| **Browser** | `browser` | API calls through local Playwright browser. Cross-platform. Also enables UI automation |
 
 **Use when:**
 - User shares a Slack URL
@@ -48,32 +48,34 @@ npx skills add https://github.com/azmym/agent-skills --skill slack --agent '*'
 npx skills add https://github.com/azmym/agent-skills --skill slack --agent 'Claude Code,Cursor'
 ```
 
-### Install agent-browser (for browser mode)
+## First Use
+
+On the very first Slack operation, the agent will prompt you to choose a mode:
+
+1. **Token** (macOS only): Fastest. Extracts tokens from Chrome automatically. Requires Chrome with Slack open, AppleScript enabled, and `uvx`.
+2. **Browser** (cross-platform): Uses a local Playwright browser. Works on macOS, Linux, and Windows. Requires Node.js 18+. Supports SSO and 2FA login.
+3. **Auto-detect** (recommended): Uses browser mode when a session exists, falls back to token mode otherwise.
+
+Your choice is saved to `~/.agents/config/slack/config.env` and the agent will never ask again.
+
+If you select **Browser** mode, the agent will also launch a visible browser window so you can log in to Slack (supports SSO, 2FA, and any login method your workspace uses).
+
+### Changing mode later
+
+You can change mode at any time by editing the config file:
 
 ```bash
-npx skills add inference-sh-0/skills --skill agent-browser
-```
-
-## Mode Selection
-
-Choose your mode by creating a config file or setting an environment variable.
-
-All config and state lives under `~/.agents/config/slack/`.
-
-### Config file (persistent)
-
-```bash
-# Auto-detect (default, no config needed)
-echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
-
-# Token mode (macOS, fast)
+# Switch to token mode
 echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
 
-# Browser mode (cross-platform)
+# Switch to browser mode
 echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
+
+# Switch to auto-detect
+echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
 ```
 
-### Environment variable (per-call override)
+Or override per-call with an environment variable:
 
 ```bash
 SLACK_MODE=browser slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
@@ -83,9 +85,11 @@ The environment variable takes priority over the config file.
 
 ### How auto-detect works
 
-1. Check if a browser session exists (`~/.agents/config/slack/browser-session`) and `infsh` is installed
-2. If yes, use browser mode
-3. If no, use token mode
+1. Check if a Playwright session exists with a valid `storageState.json` under `~/.agents/config/slack/sessions/`
+2. If a valid session is found, use **browser** mode
+3. If no valid session exists, fall back to **token** mode
+
+This means you can set `SLACK_MODE=auto` and freely switch between modes: start a browser session to use browser mode, stop it to fall back to token mode, all without changing config.
 
 ## Prerequisites
 
@@ -135,20 +139,20 @@ uvx --version
 
 ### Browser Mode (Cross-Platform)
 
-#### 1. inference.sh CLI
+#### 1. Node.js 18+
+
+Install from [nodejs.org](https://nodejs.org) or via your package manager:
 
 ```bash
-curl -fsSL https://cli.inference.sh | sh
-infsh login
+# macOS
+brew install node
+
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt-get install -y nodejs
 ```
 
-#### 2. agent-browser skill
-
-```bash
-npx skills add inference-sh-0/skills --skill agent-browser
-```
-
-No Chrome, AppleScript, or pycookiecheat required.
+Playwright and Chromium install automatically on first use. No additional setup required.
 
 ## How It Works
 
@@ -165,10 +169,10 @@ No manual token management needed.
 
 ### Browser Mode
 
-1. A persistent headless browser session is launched via the [agent-browser](https://skills.sh/inference-sh-0/skills/agent-browser) skill
-2. You log in to Slack once through the browser session (email/password or SSO)
-3. API calls execute inside the browser using `fetch()`, which automatically includes all authentication cookies
-4. The session persists across calls until you explicitly close it
+1. A local Playwright Chromium instance is launched
+2. You log in to Slack once (manually for SSO/2FA, or automated for email/password)
+3. Session state (cookies + localStorage) is saved to `~/.agents/config/slack/sessions/<id>/storageState.json`
+4. API calls launch a short-lived Chromium process, restore the session state, execute `fetch()`, and exit
 5. If no browser session is active and mode is `auto`, the skill falls back to token mode
 
 Browser mode also enables **UI automation** for Slack features that have no API:
@@ -214,12 +218,13 @@ Once installed, just ask your agent naturally:
 
 | Problem | Fix |
 |---|---|
-| `infsh: command not found` | Install: `curl -fsSL https://cli.inference.sh \| sh && infsh login` |
+| `Node.js is required but not found` | Install Node.js 18+ from https://nodejs.org |
 | `no_browser_session` | Run `slack-browser-session.sh start` first |
-| Login page keeps showing | Session may have expired; run `stop` then `start` again |
+| `browserType.launch: Executable doesn't exist` | Run `slack-browser-session.sh start` (auto-installs Chromium) |
+| Login page keeps showing | Session may have expired; run `stop` then `login-manual` again |
 | `no_teams_found` error | Slack hasn't loaded workspace data yet; wait a few seconds and retry |
 | Slow API responses | Browser mode has overhead; for high-frequency calls on macOS, use `SLACK_MODE=token` |
-| SSO login flow | Use `snapshot` and `interact` via agent-browser to navigate the SSO provider's form step by step |
+| SSO login flow | Use `login-manual` to open a visible browser window and log in manually |
 
 ## License
 
