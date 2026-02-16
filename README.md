@@ -58,17 +58,19 @@ npx skills add inference-sh-0/skills --skill agent-browser
 
 Choose your mode by creating a config file or setting an environment variable.
 
+All config and state lives under `~/.agents/config/slack/`.
+
 ### Config file (persistent)
 
 ```bash
 # Auto-detect (default, no config needed)
-echo 'SLACK_MODE=auto' > ~/.claude/slack-config.env
+echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
 
 # Token mode (macOS, fast)
-echo 'SLACK_MODE=token' > ~/.claude/slack-config.env
+echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
 
 # Browser mode (cross-platform)
-echo 'SLACK_MODE=browser' > ~/.claude/slack-config.env
+echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
 ```
 
 ### Environment variable (per-call override)
@@ -81,7 +83,7 @@ The environment variable takes priority over the config file.
 
 ### How auto-detect works
 
-1. Check if a browser session exists (`~/.claude/slack-browser-session`) and `infsh` is installed
+1. Check if a browser session exists (`~/.agents/config/slack/browser-session`) and `infsh` is installed
 2. If yes, use browser mode
 3. If no, use token mode
 
@@ -155,7 +157,7 @@ No Chrome, AppleScript, or pycookiecheat required.
 1. On the first API call, the skill automatically extracts two session tokens from Chrome:
    - **xoxc**: from Slack's `localStorage` via AppleScript
    - **xoxd**: from Chrome's cookie database via `pycookiecheat`
-2. Tokens are saved to `~/.claude/slack-tokens.env`
+2. Tokens are saved to `~/.agents/config/slack/tokens.env`
 3. If a token expires (`invalid_auth`), the skill auto-refreshes and retries
 4. API calls are made via `curl` directly to the Slack Web API
 

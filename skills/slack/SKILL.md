@@ -9,7 +9,7 @@ Interact with Slack: read, write, search, react, pin, and manage conversations v
 
 ## Mode Selection
 
-The skill supports three modes. Set via `~/.claude/slack-config.env` or the `SLACK_MODE` environment variable:
+The skill supports three modes. Set via `~/.agents/config/slack/config.env` or the `SLACK_MODE` environment variable:
 
 | Mode | Value | Behavior |
 |------|-------|----------|
@@ -21,17 +21,29 @@ The skill supports three modes. Set via `~/.claude/slack-config.env` or the `SLA
 
 Option 1: Config file (persistent)
 
-    echo 'SLACK_MODE=token' > ~/.claude/slack-config.env
+    echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
     # or
-    echo 'SLACK_MODE=browser' > ~/.claude/slack-config.env
+    echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
     # or
-    echo 'SLACK_MODE=auto' > ~/.claude/slack-config.env
+    echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
 
 Option 2: Environment variable (per-call override)
 
     SLACK_MODE=browser slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
 
 The environment variable takes priority over the config file.
+
+## Config and State Directory
+
+All skill config and state lives under `~/.agents/config/slack/`:
+
+| File | Purpose |
+|------|---------|
+| `config.env` | Mode selection (`SLACK_MODE=auto\|token\|browser`) |
+| `tokens.env` | Cached session tokens (xoxc, xoxd, user-agent) |
+| `browser-session` | Active browser session ID |
+
+This directory is created automatically on first use.
 
 ## API Wrapper
 
@@ -63,7 +75,7 @@ For detailed documentation, see [references/browser-mode.md](references/browser-
 ### Quick Start (Browser Mode)
 
     # 1. Set mode to browser
-    echo 'SLACK_MODE=browser' > ~/.claude/slack-config.env
+    echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
 
     # 2. Start a browser session
     {SKILL_DIR}/scripts/slack-browser-session.sh start
@@ -195,7 +207,7 @@ Emoji name without colons. Supports skin tones: `thumbsup::skin-tone-3`.
 
 Messages may contain files. In token mode:
 
-    source ~/.claude/slack-tokens.env
+    source ~/.agents/config/slack/tokens.env
     curl -s "FILE_URL_PRIVATE" \
       -H "Authorization: Bearer ${SLACK_XOXC}" \
       -H "Cookie: d=${SLACK_XOXD}" \
@@ -227,7 +239,7 @@ Then use the Read tool to view the downloaded image.
 ## Token Refresh (Token Mode, Automatic)
 
 Token refresh is fully automatic. The API wrapper:
-1. Auto-refreshes if `~/.claude/slack-tokens.env` is missing
+1. Auto-refreshes if `~/.agents/config/slack/tokens.env` is missing
 2. Auto-refreshes on `invalid_auth` errors and retries the call
 
 Tokens are extracted from the running Chrome browser:
@@ -243,7 +255,7 @@ Tokens are extracted from the running Chrome browser:
 3. Install uv: `brew install uv`
 4. Set mode (optional, auto-detect works by default):
 
-       echo 'SLACK_MODE=token' > ~/.claude/slack-config.env
+       echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
 
 ### Browser Mode (Cross-Platform)
 
@@ -257,7 +269,7 @@ Tokens are extracted from the running Chrome browser:
 
 3. Set mode and start a session:
 
-       echo 'SLACK_MODE=browser' > ~/.claude/slack-config.env
+       echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
        {SKILL_DIR}/scripts/slack-browser-session.sh start
        {SKILL_DIR}/scripts/slack-browser-session.sh login user@example.com mypassword
 

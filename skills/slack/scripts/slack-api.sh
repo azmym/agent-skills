@@ -5,7 +5,7 @@
 #
 # Mode selection (in order of priority):
 #   1. SLACK_MODE environment variable
-#   2. ~/.claude/slack-config.env file
+#   2. ~/.agents/config/slack/config.env file
 #   3. Default: auto
 #
 # Modes:
@@ -16,9 +16,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONFIG_FILE="${HOME}/.claude/slack-config.env"
-TOKENS_FILE="${HOME}/.claude/slack-tokens.env"
-SESSION_FILE="${HOME}/.claude/slack-browser-session"
+SLACK_CONFIG_DIR="${HOME}/.agents/config/slack"
+CONFIG_FILE="${SLACK_CONFIG_DIR}/config.env"
+TOKENS_FILE="${SLACK_CONFIG_DIR}/tokens.env"
+SESSION_FILE="${SLACK_CONFIG_DIR}/browser-session"
+
+# Ensure config directory exists
+mkdir -p "$SLACK_CONFIG_DIR"
 
 # Load config if SLACK_MODE not already set via environment
 if [ -z "${SLACK_MODE:-}" ] && [ -f "$CONFIG_FILE" ]; then

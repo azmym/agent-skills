@@ -4,8 +4,11 @@
 # Extracts xoxd from Chrome cookie database via lsof + pycookiecheat.
 set -euo pipefail
 
-TOKENS_FILE="${HOME}/.claude/slack-tokens.env"
+SLACK_CONFIG_DIR="${HOME}/.agents/config/slack"
+TOKENS_FILE="${SLACK_CONFIG_DIR}/tokens.env"
 UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+mkdir -p "$SLACK_CONFIG_DIR"
 
 echo "Refreshing Slack tokens..." >&2
 

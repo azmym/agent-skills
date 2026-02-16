@@ -7,6 +7,15 @@ Browser mode provides cross-platform Slack access by running a persistent browse
 - [inference.sh CLI](https://inference.sh) installed and authenticated
 - agent-browser skill: `npx skills add inference-sh-0/skills --skill agent-browser`
 
+## Config and State
+
+All browser mode state lives under `~/.agents/config/slack/`:
+
+| File | Purpose |
+|------|---------|
+| `config.env` | Mode selection (`SLACK_MODE=browser`) |
+| `browser-session` | Active browser session ID |
+
 ## Session Lifecycle
 
 ### Start a session
@@ -46,17 +55,17 @@ Returns a screenshot of the current browser state. Useful to verify login succee
 
 ## Making API Calls
 
-Use `slack-browser-api.sh` with the same interface as `slack-api.sh`:
+Use `slack-api.sh` with `SLACK_MODE=browser` (or set it in config):
 
-    {SKILL_DIR}/scripts/slack-browser-api.sh conversations.history channel=C041RSY6DN2 limit=20
-    {SKILL_DIR}/scripts/slack-browser-api.sh chat.postMessage channel=C041RSY6DN2 text="Hello"
-    {SKILL_DIR}/scripts/slack-browser-api.sh search.messages query="project update" count=10
+    {SKILL_DIR}/scripts/slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
+    {SKILL_DIR}/scripts/slack-api.sh chat.postMessage channel=C041RSY6DN2 text="Hello"
+    {SKILL_DIR}/scripts/slack-api.sh search.messages query="project update" count=10
 
 All methods from the [API reference](api-methods.md) are supported.
 
 ### How It Works
 
-1. The script reads the browser session ID from `~/.claude/slack-browser-session`
+1. The script reads the browser session ID from `~/.agents/config/slack/browser-session`
 2. It builds a JavaScript snippet that calls `fetch()` against the Slack Web API
 3. The token is extracted from `localStorage.localConfig_v2` inside the browser
 4. The browser automatically attaches session cookies (including the httpOnly `d` cookie)
@@ -64,12 +73,10 @@ All methods from the [API reference](api-methods.md) are supported.
 
 ### Automatic Fallback
 
-`slack-browser-api.sh` automatically falls back to `slack-api.sh` (token mode) when:
+When `SLACK_MODE=auto` (the default), `slack-api.sh` automatically falls back to token mode when:
 
-- No browser session is active (`~/.claude/slack-browser-session` does not exist)
+- No browser session is active (`~/.agents/config/slack/browser-session` does not exist)
 - `infsh` CLI is not installed
-
-This means you can use `slack-browser-api.sh` as a drop-in replacement for `slack-api.sh`.
 
 ## UI Automation
 
@@ -137,6 +144,6 @@ Run custom JavaScript:
 
 **"no_teams_found" error**: You are logged in but Slack has not loaded the workspace data yet. Wait a few seconds and retry, or use `snapshot` to check the page state.
 
-**Slow API responses**: Browser-proxied calls have overhead from the Playwright session. For high-frequency calls on macOS, switch to token mode by ensuring no browser session is active (the script falls back automatically).
+**Slow API responses**: Browser-proxied calls have overhead from the Playwright session. For high-frequency calls on macOS, switch to token mode by setting `SLACK_MODE=token`.
 
 **SSO login flow**: Use `snapshot` and `interact` to navigate the SSO provider's login form step by step. Each SSO provider (Google, Okta, Azure AD) has a different flow.
