@@ -12,7 +12,7 @@ Supports three modes:
 
 | Mode | Config Value | Behavior |
 |------|-------------|----------|
-| **Auto-detect** | `auto` (default) | Uses browser mode if a session exists, otherwise falls back to token mode |
+| **Auto-detect** | `auto` (recommended) | Uses browser mode if a session exists, otherwise falls back to token mode |
 | **Token** | `token` | Direct curl calls using Chrome session tokens. Fast. macOS only |
 | **Browser** | `browser` | API calls through local Playwright browser. Cross-platform. Also enables UI automation |
 
@@ -48,26 +48,34 @@ npx skills add https://github.com/azmym/agent-skills --skill slack --agent '*'
 npx skills add https://github.com/azmym/agent-skills --skill slack --agent 'Claude Code,Cursor'
 ```
 
-## Mode Selection
+## First Use
 
-Choose your mode by creating a config file or setting an environment variable.
+On the very first Slack operation, the agent will prompt you to choose a mode:
 
-All config and state lives under `~/.agents/config/slack/`.
+1. **Token** (macOS only): Fastest. Extracts tokens from Chrome automatically. Requires Chrome with Slack open, AppleScript enabled, and `uvx`.
+2. **Browser** (cross-platform): Uses a local Playwright browser. Works on macOS, Linux, and Windows. Requires Node.js 18+. Supports SSO and 2FA login.
+3. **Auto-detect** (recommended): Uses browser mode when a session exists, falls back to token mode otherwise.
 
-### Config file (persistent)
+Your choice is saved to `~/.agents/config/slack/config.env` and the agent will never ask again.
+
+If you select **Browser** mode, the agent will also launch a visible browser window so you can log in to Slack (supports SSO, 2FA, and any login method your workspace uses).
+
+### Changing mode later
+
+You can change mode at any time by editing the config file:
 
 ```bash
-# Auto-detect (default, no config needed)
-echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
-
-# Token mode (macOS, fast)
+# Switch to token mode
 echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
 
-# Browser mode (cross-platform)
+# Switch to browser mode
 echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
+
+# Switch to auto-detect
+echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
 ```
 
-### Environment variable (per-call override)
+Or override per-call with an environment variable:
 
 ```bash
 SLACK_MODE=browser slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
