@@ -7,20 +7,64 @@ description: Interact with Slack via the Web API. Read, summarize, search, post 
 
 Interact with Slack: read, write, search, react, pin, and manage conversations via the Web API.
 
-This skill supports two modes:
+## Mode Selection
 
-- **Token mode** (default): Fast, curl-based API calls using browser session tokens extracted from Chrome. macOS required.
-- **Browser mode**: Cross-platform Slack access via the [agent-browser](https://skills.sh/inference-sh-0/skills/agent-browser) skill. API calls execute inside a persistent browser session, no token extraction needed. Also enables UI automation for Slack features without API support.
+The skill supports three modes. Set via `~/.agents/config/slack/config.env` or the `SLACK_MODE` environment variable:
 
-## Token Mode (API Wrapper)
+| Mode | Value | Behavior |
+|------|-------|----------|
+| Token | `token` | Direct curl calls using Chrome session tokens. Fast. macOS only. |
+| Browser | `browser` | API calls through an agent-browser session. Cross-platform. |
+| Auto-detect | `auto` | Use browser if a session exists, otherwise fall back to token. **(default)** |
 
-All calls go through the script at `scripts/slack-api.sh` relative to this skill's base directory:
+### Configure the mode
+
+Option 1: Config file (persistent)
+
+    echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
+    # or
+    echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
+    # or
+    echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
+
+Option 2: Environment variable (per-call override)
+
+    SLACK_MODE=browser slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
+
+The environment variable takes priority over the config file.
+
+## Config and State Directory
+
+All skill config and state lives under `~/.agents/config/slack/`:
+
+| File | Purpose |
+|------|---------|
+| `config.env` | Mode selection (`SLACK_MODE=auto\|token\|browser`) |
+| `tokens.env` | Cached session tokens (xoxc, xoxd, user-agent) |
+| `browser-session` | Active browser session ID |
+
+This directory is created automatically on first use.
+
+## API Wrapper
+
+All calls go through a single unified script:
 
     {SKILL_DIR}/scripts/slack-api.sh <method> [key=value ...]
 
 Where `{SKILL_DIR}` is the base directory provided when this skill is loaded (e.g., `~/.agents/skills/slack`).
 
-For the full method reference, see [references/api-methods.md](references/api-methods.md).
+The script automatically routes to the correct mode based on your configuration. For the full method reference, see [references/api-methods.md](references/api-methods.md).
+
+## Token Mode (macOS)
+
+Token mode extracts session tokens from your running Chrome browser and makes direct curl calls to the Slack Web API.
+
+Prerequisites:
+- Chrome running with Slack open at app.slack.com
+- Chrome > View > Developer > Allow JavaScript from Apple Events
+- `uvx` installed (`brew install uv`)
+
+No manual setup needed. On first API call, tokens are extracted automatically.
 
 ## Browser Mode (Cross-Platform)
 
@@ -30,22 +74,23 @@ For detailed documentation, see [references/browser-mode.md](references/browser-
 
 ### Quick Start (Browser Mode)
 
-    # 1. Start a browser session
+    # 1. Set mode to browser
+    echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
+
+    # 2. Start a browser session
     {SKILL_DIR}/scripts/slack-browser-session.sh start
 
-    # 2. Log in (email + password)
+    # 3. Log in (email + password)
     {SKILL_DIR}/scripts/slack-browser-session.sh login user@example.com mypassword
 
-    # 3. Verify login succeeded
+    # 4. Verify login succeeded
     {SKILL_DIR}/scripts/slack-browser-session.sh status
 
-    # 4. Make API calls (same interface as slack-api.sh)
-    {SKILL_DIR}/scripts/slack-browser-api.sh conversations.history channel=C041RSY6DN2 limit=20
+    # 5. Make API calls (same script, routes through browser automatically)
+    {SKILL_DIR}/scripts/slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
 
-    # 5. Close when done
+    # 6. Close when done
     {SKILL_DIR}/scripts/slack-browser-session.sh stop
-
-`slack-browser-api.sh` automatically falls back to token mode (`slack-api.sh`) if no browser session is active.
 
 ### UI Automation (API Gaps)
 
@@ -160,27 +205,21 @@ Emoji name without colons. Supports skin tones: `thumbsup::skin-tone-3`.
 
 ## Image and File Handling
 
-Messages may contain files. For images in the JSON response:
+Messages may contain files. In token mode:
 
-    source ~/.claude/slack-tokens.env
+    source ~/.agents/config/slack/tokens.env
     curl -s "FILE_URL_PRIVATE" \
       -H "Authorization: Bearer ${SLACK_XOXC}" \
       -H "Cookie: d=${SLACK_XOXD}" \
       -o /tmp/slack-image-N.png
 
-Then use the Read tool to view the downloaded image.
-
-In browser mode, files can be downloaded directly through the browser session:
-
-    SESSION_ID=$({SKILL_DIR}/scripts/slack-browser-session.sh get)
-    infsh app run agent-browser --function execute --session $SESSION_ID \
-      --input '{"code": "await fetch(\"FILE_URL_PRIVATE\").then(r => r.blob()).then(b => b.text())"}'
-
-Or navigate to the file URL and take a screenshot:
+In browser mode, navigate to the file URL and screenshot:
 
     infsh app run agent-browser --function interact --session $SESSION_ID \
       --input '{"action": "goto", "url": "FILE_URL_PRIVATE"}'
     infsh app run agent-browser --function screenshot --session $SESSION_ID --input '{"full_page": true}'
+
+Then use the Read tool to view the downloaded image.
 
 ## Output Formatting
 
@@ -199,25 +238,24 @@ Or navigate to the file URL and take a screenshot:
 
 ## Token Refresh (Token Mode, Automatic)
 
-Token refresh is fully automatic. The API wrapper (`slack-api.sh`):
-1. Auto-refreshes if `~/.claude/slack-tokens.env` is missing
+Token refresh is fully automatic. The API wrapper:
+1. Auto-refreshes if `~/.agents/config/slack/tokens.env` is missing
 2. Auto-refreshes on `invalid_auth` errors and retries the call
 
 Tokens are extracted from the running Chrome browser:
 - xoxc: from Slack's localStorage via AppleScript
 - xoxd: from Chrome's cookie database via `lsof` + `pycookiecheat`
 
-Prerequisites (one-time, token mode only):
-- Chrome > View > Developer > Allow JavaScript from Apple Events (must stay enabled)
-- Slack open in a Chrome tab at app.slack.com
-- `uvx` installed
-
 ## Setup
 
 ### Token Mode (macOS)
 
-No manual setup needed. On first API call, tokens are extracted automatically from Chrome.
-If extraction fails, ensure the prerequisites above are met.
+1. Open Chrome with Slack at app.slack.com
+2. Enable Chrome > View > Developer > Allow JavaScript from Apple Events
+3. Install uv: `brew install uv`
+4. Set mode (optional, auto-detect works by default):
+
+       echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
 
 ### Browser Mode (Cross-Platform)
 
@@ -229,12 +267,15 @@ If extraction fails, ensure the prerequisites above are met.
 
        npx skills add inference-sh-0/skills --skill agent-browser
 
-3. Start a session and log in:
+3. Set mode and start a session:
 
+       echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
        {SKILL_DIR}/scripts/slack-browser-session.sh start
        {SKILL_DIR}/scripts/slack-browser-session.sh login user@example.com mypassword
 
-4. Use `slack-browser-api.sh` instead of (or in addition to) `slack-api.sh`.
+### Auto-detect (Default)
+
+No configuration needed. The skill checks for an active browser session first, and falls back to token mode if none exists.
 
 ## Full API Reference
 
@@ -252,7 +293,9 @@ For additional methods (bookmarks, user groups, reminders, emoji, files, user pr
 
 - not_in_channel: User does not have access to this channel
 - channel_not_found: Invalid channel ID
-- invalid_auth: Token expired, auto-refresh attempted (see Token Refresh)
+- invalid_auth: Token expired, auto-refresh attempted (token mode)
 - ratelimited: Wait and retry with sleep 5
 - cant_update_message / cant_delete_message: Can only modify own messages
-- no_teams_found (browser mode): Slack has not loaded workspace data; wait and retry
+- no_browser_session: No active browser session; run slack-browser-session.sh start
+- infsh_not_found: infsh CLI not installed; see Browser Mode setup
+- no_teams_found: Slack has not loaded workspace data in browser; wait and retry

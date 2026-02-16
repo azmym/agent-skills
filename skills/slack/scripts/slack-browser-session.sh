@@ -15,7 +15,10 @@
 
 set -euo pipefail
 
-SESSION_FILE="${HOME}/.claude/slack-browser-session"
+SLACK_CONFIG_DIR="${HOME}/.agents/config/slack"
+SESSION_FILE="${SLACK_CONFIG_DIR}/browser-session"
+
+mkdir -p "$SLACK_CONFIG_DIR"
 
 ensure_infsh() {
   if ! command -v infsh &>/dev/null; then
@@ -35,7 +38,6 @@ cmd_start() {
   RESULT=$(infsh app run agent-browser --function open --session new \
     --input '{"url": "https://app.slack.com"}')
   SESSION_ID=$(echo "$RESULT" | jq -r '.session_id')
-  mkdir -p "$(dirname "$SESSION_FILE")"
   echo "$SESSION_ID" > "$SESSION_FILE"
   echo "Session started: $SESSION_ID" >&2
   echo "Use 'status' to screenshot the current state." >&2
