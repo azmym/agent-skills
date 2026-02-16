@@ -102,6 +102,9 @@ run_browser() {
     PARAMS_JS="${PARAMS_JS}    params.append(\"${KEY}\", \"${VALUE}\");"$'\n'
   done
 
+  # Uses relative /api/ path against app.slack.com origin.
+  # This ensures the browser's session cookies (including the httpOnly d cookie)
+  # are included automatically via same-origin request.
   JS_CODE=$(cat <<JSEOF
 (async () => {
   try {
@@ -112,9 +115,10 @@ run_browser() {
     const params = new URLSearchParams();
     params.append("token", token);
 ${PARAMS_JS}
-    const resp = await fetch("https://slack.com/api/${METHOD}", {
+    const resp = await fetch("/api/${METHOD}", {
       method: "POST",
-      body: params
+      body: params,
+      credentials: "same-origin"
     });
     return JSON.stringify(await resp.json());
   } catch (e) {
