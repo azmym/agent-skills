@@ -7,6 +7,35 @@ description: Interact with Slack via the Web API. Read, summarize, search, post 
 
 Interact with Slack: read, write, search, react, pin, and manage conversations via the Web API.
 
+## IMPORTANT: First-Use Initialization
+
+**Before executing any Slack operation**, check if the mode config file exists:
+
+    cat ~/.agents/config/slack/config.env
+
+If the file does **not** exist (or does not contain `SLACK_MODE`), you **must** ask the user which mode they want to use. Present these three options:
+
+1. **Token** (macOS only): Extracts session tokens directly from Chrome. Fastest option. Requires Chrome with Slack open, AppleScript enabled, and `uvx` installed.
+2. **Browser** (cross-platform): Uses a local Playwright browser to make API calls. Works on macOS, Linux, and Windows. Requires Node.js 18+. Supports SSO and 2FA login.
+3. **Auto-detect** (recommended): Automatically uses browser mode if a Playwright session exists, otherwise falls back to token mode. Best of both worlds.
+
+Once the user selects a mode, save it immediately:
+
+    mkdir -p ~/.agents/config/slack
+    echo 'SLACK_MODE=<selected_value>' > ~/.agents/config/slack/config.env
+
+Where `<selected_value>` is `token`, `browser`, or `auto`.
+
+**After saving, never ask again.** On all subsequent invocations, the config file will exist and the skill will use the saved mode automatically.
+
+If the user selected `browser` mode, also run the browser session setup:
+
+    {SKILL_DIR}/scripts/slack-browser-session.sh login-manual
+
+This opens a visible browser for the user to log in to Slack (supports SSO/2FA). The session is saved and reused for all future API calls.
+
+---
+
 ## Mode Selection
 
 The skill supports three modes. Set via `~/.agents/config/slack/config.env` or the `SLACK_MODE` environment variable:
