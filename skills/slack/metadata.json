@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "organization": "Mahmoud Azmy",
   "date": "February 2026",
-  "abstract": "Interact with Slack via the Web API: read, summarize, search, post messages, react, pin, and manage channels. Extracts browser session tokens from Chrome automatically.",
-  "references": ["https://api.slack.com/methods"]
+  "abstract": "Interact with Slack via the Web API: read, summarize, search, post messages, react, pin, and manage channels. Supports two modes: token-based (macOS) and browser-based via agent-browser (cross-platform). Includes UI automation for Slack features without API support.",
+  "references": ["https://api.slack.com/methods", "https://skills.sh/inference-sh-0/skills/agent-browser"]
 }
