@@ -23,15 +23,70 @@ if [ -z "$COOKIE_FILE" ]; then
 fi
 
 # --- Step 2: Extract xoxd cookie ---
-XOXD=$(uvx --from pycookiecheat python3 -c "
+# Copy Chrome's Cookies DB to /tmp to avoid SQLite lock conflicts
+TMP_COOKIES="/tmp/slack-chrome-cookies-$$"
+cp "$COOKIE_FILE" "$TMP_COOKIES"
+[ -f "${COOKIE_FILE}-wal" ] && cp "${COOKIE_FILE}-wal" "${TMP_COOKIES}-wal"
+[ -f "${COOKIE_FILE}-shm" ] && cp "${COOKIE_FILE}-shm" "${TMP_COOKIES}-shm"
+trap 'rm -f "$TMP_COOKIES" "${TMP_COOKIES}-wal" "${TMP_COOKIES}-shm"' EXIT
+
+# Try direct decryption first (no Chrome lock issues with the copy)
+XOXD=$(python3 -c "
+import sqlite3, subprocess, hashlib, urllib.parse
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+
+# Get Chrome Safe Storage password from Keychain
+pwd = subprocess.check_output(
+    ['security', 'find-generic-password', '-s', 'Chrome Safe Storage', '-w']
+).strip()
+
+# Derive key: PBKDF2-SHA1, salt='saltysalt', 1003 iterations, 16 bytes
+kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=16, salt=b'saltysalt', iterations=1003)
+key = kdf.derive(pwd)
+
+db = sqlite3.connect('${TMP_COOKIES}')
+row = db.execute(
+    \"SELECT encrypted_value FROM cookies WHERE host_key LIKE '%slack.com' AND name='d'\"
+).fetchone()
+db.close()
+
+if not row or not row[0]:
+    print('NOT_FOUND')
+else:
+    blob = row[0]
+    # v10 prefix = 3 bytes, then AES-128-CBC with 16-byte space IV
+    if blob[:3] == b'v10':
+        blob = blob[3:]
+    iv = b' ' * 16
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    dec = cipher.decryptor()
+    plaintext = dec.update(blob) + dec.finalize()
+    # Remove PKCS7 padding
+    pad_len = plaintext[-1]
+    if isinstance(pad_len, int) and 1 <= pad_len <= 16:
+        plaintext = plaintext[:-pad_len]
+    d = plaintext.decode('utf-8', errors='replace')
+    if '%2' in d:
+        print(d)
+    else:
+        print(urllib.parse.quote(d, safe=''))
+" 2>/dev/null || echo "NOT_FOUND")
+
+# Fall back to pycookiecheat if direct decryption failed
+if [ "$XOXD" = "NOT_FOUND" ]; then
+  echo "Direct decryption failed, trying pycookiecheat..." >&2
+  XOXD=$(uvx --from pycookiecheat python3 -c "
 from pycookiecheat import chrome_cookies
 import urllib.parse
-cookies = chrome_cookies('https://slack.com', cookie_file='${COOKIE_FILE}')
+cookies = chrome_cookies('https://slack.com', cookie_file='${TMP_COOKIES}')
 d = cookies.get('d', '')
 if not d: print('NOT_FOUND')
 elif '%2' in d: print(d)
 else: print(urllib.parse.quote(d, safe=''))
 " 2>/dev/null || echo "NOT_FOUND")
+fi
 
 if [ "$XOXD" = "NOT_FOUND" ]; then
   echo "ERROR: Could not extract xoxd cookie." >&2

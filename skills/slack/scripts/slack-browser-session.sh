@@ -132,6 +132,15 @@ cmd_login_manual() {
     SID=$(cat "$SESSION_FILE")
   fi
 
+  # Print instructions BEFORE opening the browser (user sees them while it loads)
+  echo "" >&2
+  echo "Opening a browser window for Slack login..." >&2
+  echo "Please log in manually (SSO, 2FA, etc.)." >&2
+  echo "Once you reach app.slack.com, close the browser window." >&2
+  echo "Your session state will be saved automatically." >&2
+  echo "" >&2
+
+  # The bridge now blocks until the browser is closed (headed mode)
   if [ -z "${SID:-}" ]; then
     local result
     result=$(run_bridge --function open --session new --headed --input '{"url": "https://slack.com/signin", "headed": true}')
@@ -141,13 +150,22 @@ cmd_login_manual() {
     run_bridge --function open --session "$SID" --headed --input '{"url": "https://slack.com/signin", "headed": true}'
   fi
 
-  echo "" >&2
-  echo "A browser window has opened." >&2
-  echo "Please log in to Slack manually (SSO, 2FA, etc.)." >&2
-  echo "Once you reach app.slack.com, close the browser window." >&2
-  echo "" >&2
-  echo "Session: $SID" >&2
-  echo "After login, your session state is saved automatically." >&2
+  # Validate that the session has enough cookies (authenticated sessions have 10+)
+  local STATE_FILE="$SESSIONS_DIR/$SID/storageState.json"
+  if [ -f "$STATE_FILE" ]; then
+    local COOKIE_COUNT
+    COOKIE_COUNT=$(python3 -c "import json; print(len(json.load(open('$STATE_FILE')).get('cookies',[])))" 2>/dev/null || echo "0")
+    if [ "$COOKIE_COUNT" -gt 4 ]; then
+      echo "Login successful. Session saved with $COOKIE_COUNT cookies." >&2
+      echo "Session: $SID" >&2
+    else
+      echo "WARNING: Session has only $COOKIE_COUNT cookies (expected 10+)." >&2
+      echo "Login may not have completed. Try running login-manual again." >&2
+    fi
+  else
+    echo "WARNING: No state file found. Login may have failed." >&2
+    echo "Try running login-manual again." >&2
+  fi
 }
 
 cmd_status() {
