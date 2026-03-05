@@ -94,13 +94,19 @@ async function fnOpen(sessionId, input) {
 
     if (headed) {
       // Poll all pages/tabs for app.slack.com (login may redirect to a new tab),
-      // save state once, then block until browser closes
+      // save state once, then close the browser automatically
       await new Promise((resolve) => {
         let saved = false;
         const interval = setInterval(async () => {
           if (saved) return;
           try {
             const pages = context.pages();
+            if (pages.length === 0) {
+              // User closed all tabs/windows
+              clearInterval(interval);
+              resolve();
+              return;
+            }
             const loggedIn = pages.some((p) =>
               p.url().includes("app.slack.com")
             );
@@ -109,9 +115,13 @@ async function fnOpen(sessionId, input) {
               clearInterval(interval);
               await new Promise((r) => setTimeout(r, 3000));
               await saveState(context, id);
+              await browser.close();
+              resolve();
             }
           } catch (_) {
-            // Pages may be navigating or closed; ignore
+            // Context destroyed (browser closed by user); resolve
+            clearInterval(interval);
+            resolve();
           }
         }, 2000);
         browser.on("disconnected", () => {
@@ -119,12 +129,6 @@ async function fnOpen(sessionId, input) {
           resolve();
         });
       });
-      // Final save attempt after browser closes
-      try {
-        await saveState(context, id);
-      } catch (_) {
-        // Context may already be destroyed
-      }
       return { session_id: id };
     }
 
