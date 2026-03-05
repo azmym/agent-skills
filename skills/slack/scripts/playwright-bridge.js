@@ -93,20 +93,25 @@ async function fnOpen(sessionId, input) {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     if (headed) {
-      // Poll for app.slack.com (user has logged in), save state once, then block until browser closes
+      // Poll all pages/tabs for app.slack.com (login may redirect to a new tab),
+      // save state once, then block until browser closes
       await new Promise((resolve) => {
         let saved = false;
         const interval = setInterval(async () => {
           if (saved) return;
           try {
-            if (page.url().includes("app.slack.com")) {
+            const pages = context.pages();
+            const loggedIn = pages.some((p) =>
+              p.url().includes("app.slack.com")
+            );
+            if (loggedIn) {
               saved = true;
               clearInterval(interval);
-              await page.waitForTimeout(3000);
+              await new Promise((r) => setTimeout(r, 3000));
               await saveState(context, id);
             }
           } catch (_) {
-            // Page may be navigating or closed; ignore
+            // Pages may be navigating or closed; ignore
           }
         }, 2000);
         browser.on("disconnected", () => {
