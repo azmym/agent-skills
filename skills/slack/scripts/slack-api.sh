@@ -37,7 +37,7 @@ if [ "$SLACK_MODE" = "auto" ]; then
   if [ -f "$SESSION_FILE" ]; then
     SID=$(cat "$SESSION_FILE")
     if [ -f "$SESSIONS_DIR/$SID/storageState.json" ]; then
-      SLACK_MODE="browser"
+      SLACK_MODE="auto_fb"
     else
       SLACK_MODE="token"
     fi
@@ -102,9 +102,6 @@ run_browser() {
     PARAMS_JS="${PARAMS_JS}    params.append(\"${KEY}\", \"${VALUE}\");"$'\n'
   done
 
-  # Uses relative /api/ path against app.slack.com origin.
-  # This ensures the browser's session cookies (including the httpOnly d cookie)
-  # are included automatically via same-origin request.
   JS_CODE=$(cat <<JSEOF
 (async () => {
   try {
@@ -150,9 +147,41 @@ else:
   fi
 }
 
+# --- Auto-fallback Mode ---
+run_auto_fb() {
+  local RESPONSE
+  RESPONSE=$(run_browser "$@" 2>/dev/null) || RESPONSE=""
+
+  # Check if browser response indicates auth failure or is malformed
+  local NEEDS_FALLBACK=false
+  if [ -z "$RESPONSE" ]; then
+    NEEDS_FALLBACK=true
+  elif echo "$RESPONSE" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    err = data.get('error', '')
+    if err in ('invalid_auth', 'not_authed', 'no_teams_found'):
+        sys.exit(0)
+    sys.exit(1)
+except (json.JSONDecodeError, ValueError):
+    sys.exit(0)
+" 2>/dev/null; then
+    NEEDS_FALLBACK=true
+  fi
+
+  if [ "$NEEDS_FALLBACK" = true ]; then
+    echo "Browser auth failed, falling back to token mode..." >&2
+    run_token "$@"
+  else
+    echo "$RESPONSE"
+  fi
+}
+
 # --- Execute ---
 case "$SLACK_MODE" in
   token)   run_token "$@" ;;
   browser) run_browser "$@" ;;
+  auto_fb) run_auto_fb "$@" ;;
   *)       echo "Unknown SLACK_MODE: $SLACK_MODE (expected: auto, token, browser)" >&2; exit 1 ;;
 esac

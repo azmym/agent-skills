@@ -44,7 +44,7 @@ The skill supports three modes. Set via `~/.agents/config/slack/config.env` or t
 |------|-------|----------|
 | Token | `token` | Direct curl calls using Chrome session tokens. Fast. macOS only. |
 | Browser | `browser` | API calls through a local Playwright browser session. Cross-platform. |
-| Auto-detect | `auto` | Use browser if a session exists, otherwise fall back to token. **(default)** |
+| Auto-detect | `auto` | Use browser if session exists; falls back to token on auth failure. **(default)** |
 
 ### Configure the mode
 
@@ -304,7 +304,7 @@ Tokens are extracted from the running Chrome browser:
 
 ### Auto-detect (Default)
 
-No configuration needed. The skill checks for an active browser session with a valid storageState first, and falls back to token mode if none exists.
+No configuration needed. The skill checks for an active browser session first and makes the API call via Playwright. If the browser call returns an auth error (`invalid_auth`, `not_authed`, or `no_teams_found`), it automatically falls back to token mode. This provides seamless recovery when a browser session expires.
 
 ## Full API Reference
 
@@ -320,3 +320,4 @@ For additional methods (bookmarks, user groups, reminders, emoji, files, user pr
 - no_browser_session: No active browser session; run slack-browser-session.sh start
 - node_not_found: Node.js not installed; install from https://nodejs.org
 - no_teams_found: Slack has not loaded workspace data in browser; wait and retry
+- **Automatic fallback**: In auto mode, if the browser call returns `invalid_auth`, `not_authed`, or `no_teams_found`, the skill automatically retries via token mode. No manual intervention needed.
