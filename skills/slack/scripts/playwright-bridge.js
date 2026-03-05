@@ -93,11 +93,15 @@ async function fnOpen(sessionId, input) {
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     if (headed) {
-      // Poll for app.slack.com (user has logged in), then block until browser closes
+      // Poll for app.slack.com (user has logged in), save state once, then block until browser closes
       await new Promise((resolve) => {
+        let saved = false;
         const interval = setInterval(async () => {
+          if (saved) return;
           try {
             if (page.url().includes("app.slack.com")) {
+              saved = true;
+              clearInterval(interval);
               await page.waitForTimeout(3000);
               await saveState(context, id);
             }

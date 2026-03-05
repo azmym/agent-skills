@@ -23,12 +23,20 @@ if [ -z "$COOKIE_FILE" ]; then
 fi
 
 # --- Step 2: Extract xoxd cookie ---
-# Copy Chrome's Cookies DB to /tmp to avoid SQLite lock conflicts
-TMP_COOKIES="/tmp/slack-chrome-cookies-$$"
+# Copy Chrome's Cookies DB to a secure temp directory to avoid SQLite lock conflicts
+TMP_COOKIES_DIR="$(mktemp -d)"
+TMP_COOKIES="${TMP_COOKIES_DIR}/cookies"
 cp "$COOKIE_FILE" "$TMP_COOKIES"
-[ -f "${COOKIE_FILE}-wal" ] && cp "${COOKIE_FILE}-wal" "${TMP_COOKIES}-wal"
-[ -f "${COOKIE_FILE}-shm" ] && cp "${COOKIE_FILE}-shm" "${TMP_COOKIES}-shm"
-trap 'rm -f "$TMP_COOKIES" "${TMP_COOKIES}-wal" "${TMP_COOKIES}-shm"' EXIT
+chmod 600 "$TMP_COOKIES"
+if [ -f "${COOKIE_FILE}-wal" ]; then
+  cp "${COOKIE_FILE}-wal" "${TMP_COOKIES}-wal"
+  chmod 600 "${TMP_COOKIES}-wal"
+fi
+if [ -f "${COOKIE_FILE}-shm" ]; then
+  cp "${COOKIE_FILE}-shm" "${TMP_COOKIES}-shm"
+  chmod 600 "${TMP_COOKIES}-shm"
+fi
+trap 'rm -rf "$TMP_COOKIES_DIR"' EXIT
 
 # Try direct decryption first (no Chrome lock issues with the copy)
 XOXD=$(python3 -c "

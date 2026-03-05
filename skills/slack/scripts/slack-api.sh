@@ -183,5 +183,5 @@ case "$SLACK_MODE" in
   token)   run_token "$@" ;;
   browser) run_browser "$@" ;;
   auto_fb) run_auto_fb "$@" ;;
-  *)       echo "Unknown SLACK_MODE: $SLACK_MODE (expected: auto, token, browser)" >&2; exit 1 ;;
+  *)       echo "Unknown SLACK_MODE: $SLACK_MODE (expected: auto, auto_fb, token, browser)" >&2; exit 1 ;;
 esac
