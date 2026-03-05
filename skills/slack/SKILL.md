@@ -206,6 +206,18 @@ Name: `.user.real_name` or `.user.profile.display_name`.
 
 ## Write Operations
 
+**IMPORTANT: Confirmation required before any write operation.**
+
+Before sending, editing, deleting a message, adding/removing reactions, or pinning/unpinning, always show the user a preview and ask for confirmation. Format the preview as:
+
+> **To:** #channel-name (or @username for DMs)
+> **Message:** The exact message text
+> **Action:** Send / Edit / Delete / React / Pin (as applicable)
+>
+> Send this? (or: want to change anything?)
+
+Do NOT execute the write API call until the user explicitly confirms. If the user wants changes, update the preview and ask again.
+
 ### Send a message
 
     slack-api.sh chat.postMessage channel=CHANNEL_ID text="Hello world"
