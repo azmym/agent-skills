@@ -94,15 +94,71 @@ run_browser() {
 
   SESSION_ID=$(cat "$SESSION_FILE")
 
-  PARAMS_JS=""
+  # Check if any parameter is JSON (blocks, attachments) to decide encoding
+  local HAS_JSON=false
   for arg in "$@"; do
     KEY="${arg%%=*}"
     VALUE="${arg#*=}"
-    VALUE=$(printf '%s' "$VALUE" | sed 's/\\/\\\\/g; s/"/\\"/g')
-    PARAMS_JS="${PARAMS_JS}    params.append(\"${KEY}\", \"${VALUE}\");"$'\n'
+    if [ "$KEY" = "blocks" ] || [ "$KEY" = "attachments" ]; then
+      HAS_JSON=true
+      break
+    fi
   done
 
-  JS_CODE=$(cat <<JSEOF
+  if [ "$HAS_JSON" = true ]; then
+    # Use JSON body for requests with structured data (blocks, attachments).
+    # URLSearchParams double-escapes newlines and cannot carry JSON arrays,
+    # so we build a JSON payload and POST with Content-Type application/json.
+    BODY_JSON=$(python3 -c "
+import json, sys
+params = {}
+for arg in sys.argv[1:]:
+    eq = arg.index('=')
+    k, v = arg[:eq], arg[eq+1:]
+    # Try parsing as JSON for known structured fields
+    if k in ('blocks', 'attachments', 'metadata'):
+        try:
+            params[k] = json.loads(v)
+            continue
+        except json.JSONDecodeError:
+            pass
+    params[k] = v
+print(json.dumps(params))
+" "$@")
+
+    JS_CODE=$(cat <<JSEOF
+(async () => {
+  try {
+    const lc = JSON.parse(localStorage.localConfig_v2);
+    const teamIds = Object.keys(lc.teams);
+    if (teamIds.length === 0) return JSON.stringify({ok: false, error: "no_teams_found"});
+    const token = lc.teams[teamIds[0]].token;
+    const body = ${BODY_JSON};
+    body.token = token;
+    const resp = await fetch("/api/${METHOD}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json; charset=utf-8"},
+      body: JSON.stringify(body),
+      credentials: "same-origin"
+    });
+    return JSON.stringify(await resp.json());
+  } catch (e) {
+    return JSON.stringify({ok: false, error: e.message});
+  }
+})()
+JSEOF
+    )
+  else
+    # Use URLSearchParams for simple key=value requests
+    PARAMS_JS=""
+    for arg in "$@"; do
+      KEY="${arg%%=*}"
+      VALUE="${arg#*=}"
+      VALUE=$(printf '%s' "$VALUE" | sed 's/\\/\\\\/g; s/"/\\"/g')
+      PARAMS_JS="${PARAMS_JS}    params.append(\"${KEY}\", \"${VALUE}\");"$'\n'
+    done
+
+    JS_CODE=$(cat <<JSEOF
 (async () => {
   try {
     const lc = JSON.parse(localStorage.localConfig_v2);
@@ -123,7 +179,8 @@ ${PARAMS_JS}
   }
 })()
 JSEOF
-  )
+    )
+  fi
 
   JS_JSON=$(printf '%s' "$JS_CODE" | python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))")
 
