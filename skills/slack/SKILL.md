@@ -220,9 +220,32 @@ Do NOT execute the write API call until the user explicitly confirms. If the use
 
 ### Send a message
 
+For simple one-line messages:
+
     slack-api.sh chat.postMessage channel=CHANNEL_ID text="Hello world"
 
 Thread reply: add `thread_ts=PARENT_TS`. Broadcast to channel: add `reply_broadcast=true`.
+
+### Send a formatted multi-line message
+
+For messages with newlines, bold, lists, or other mrkdwn formatting, use `blocks` instead of `text`. The `text` parameter with URLSearchParams double-escapes newlines in browser mode, so blocks are the reliable way to send formatted content.
+
+Build the blocks JSON with python and pass it to the API:
+
+    BLOCKS=$(python3 -c "
+    import json
+    blocks = [
+        {'type': 'section', 'text': {'type': 'mrkdwn', 'text': '*Bold heading*'}},
+        {'type': 'section', 'text': {'type': 'mrkdwn', 'text': 'Line 1\nLine 2\nLine 3'}},
+        {'type': 'section', 'text': {'type': 'mrkdwn', 'text': '1. First item\n2. Second item'}}
+    ]
+    print(json.dumps(blocks))
+    ")
+    slack-api.sh chat.postMessage channel=CHANNEL_ID blocks="$BLOCKS" text="Fallback text"
+
+The `text` parameter serves as fallback for notifications and clients that cannot render blocks. Always include it with a plain-text summary.
+
+Each block `text` field has a 3000-character limit. For longer messages, split across multiple section blocks.
 
 ### Edit a message
 
