@@ -134,10 +134,12 @@ print(json.dumps(params))
     if (teamIds.length === 0) return JSON.stringify({ok: false, error: "no_teams_found"});
     const token = lc.teams[teamIds[0]].token;
     const body = ${BODY_JSON};
-    body.token = token;
     const resp = await fetch("/api/${METHOD}", {
       method: "POST",
-      headers: {"Content-Type": "application/json; charset=utf-8"},
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": "Bearer " + token
+      },
       body: JSON.stringify(body),
       credentials: "same-origin"
     });
