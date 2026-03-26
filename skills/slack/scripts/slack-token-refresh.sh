@@ -40,7 +40,7 @@ trap 'rm -rf "$TMP_COOKIES_DIR"' EXIT
 
 # Try direct decryption first (no Chrome lock issues with the copy)
 XOXD=$(python3 -c "
-import sqlite3, subprocess, hashlib, urllib.parse
+import sqlite3, subprocess, urllib.parse
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -64,7 +64,7 @@ if not row or not row[0]:
     print('NOT_FOUND')
 else:
     blob = row[0]
-    # v10 prefix = 3 bytes, then AES-128-CBC with 16-byte space IV
+    # v10 prefix = 3 bytes, then AES-128-CBC encrypted data
     if blob[:3] == b'v10':
         blob = blob[3:]
     iv = b' ' * 16
@@ -75,11 +75,18 @@ else:
     pad_len = plaintext[-1]
     if isinstance(pad_len, int) and 1 <= pad_len <= 16:
         plaintext = plaintext[:-pad_len]
-    d = plaintext.decode('utf-8', errors='replace')
-    if '%2' in d:
-        print(d)
+    # Chrome 131+ may prepend metadata bytes before the actual cookie value.
+    # The AES key is correct so the cookie decrypts properly, but the prefix
+    # bytes produce garbage. Find the real cookie start (xoxd-) and strip.
+    idx = plaintext.find(b'xoxd-')
+    if idx < 0:
+        print('NOT_FOUND')
     else:
-        print(urllib.parse.quote(d, safe=''))
+        d = plaintext[idx:].decode('ascii', errors='ignore')
+        if '%2' in d:
+            print(d)
+        else:
+            print(urllib.parse.quote(d, safe=''))
 " 2>/dev/null || echo "NOT_FOUND")
 
 # Fall back to pycookiecheat if direct decryption failed
@@ -102,11 +109,12 @@ if [ "$XOXD" = "NOT_FOUND" ]; then
 fi
 
 # --- Step 3: Extract xoxc token via AppleScript ---
+# Check both app.slack.com and *.slack.com (workspace URLs like org.slack.com)
 XOXC=$(osascript -e '
 tell application "Google Chrome"
     repeat with w in every window
         repeat with t in every tab of w
-            if URL of t contains "app.slack.com" then
+            if URL of t contains "app.slack.com" or URL of t contains ".slack.com/client" then
                 set result to execute t javascript "
                     try {
                         var lc = JSON.parse(localStorage.localConfig_v2);
@@ -114,7 +122,7 @@ tell application "Google Chrome"
                         teamIds.length > 0 ? lc.teams[teamIds[0]].token : \"NOT_FOUND\";
                     } catch(e) { \"NOT_FOUND\"; }
                 "
-                return result
+                if result is not "NOT_FOUND" then return result
             end if
         end repeat
     end repeat
