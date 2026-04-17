@@ -1,7 +1,7 @@
 ---
 name: setup-check
-description: Use when auditing Claude Code configuration for issues, overlaps, unused components, update status, or misconfigurations. Triggers on "check my setup", "audit config", "what's broken", "cleanup skills", "find overlaps", "check for updates", or /setup-check.
-argument-hint: [all|updates|skills|hooks|plugins|rules|settings|security|mcp|memory|overlaps] ["goal message"]
+description: Audit Claude Code configuration for issues, overlaps, unused components, update status, and misconfigurations. Use when the user (1) asks to check or audit their setup, (2) wants to find duplicate or conflicting skills, hooks, plugins, or rules, (3) asks what is broken or needs cleanup, (4) wants to check Claude Code or plugin updates, (5) asks to review MCP servers or memory state, or (6) invokes /setup-check with optional scope (all, updates, skills, hooks, plugins, rules, settings, security, mcp, memory, overlaps).
+argument-hint: '[all|updates|skills|hooks|plugins|rules|settings|security|mcp|memory|overlaps] [goal message]'
 ---
 
 # Setup Check
