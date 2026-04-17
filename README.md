@@ -4,27 +4,45 @@ A collection of skills for AI coding agents.
 
 ## Table of Contents
 
-- [Skills](#available-skills)
-  - [Slack](#slack) — read, summarize, search, post, react, and manage channels
-  - [Setup Check](#setup-check) — audit Claude Code configuration for issues and overlaps
 - [Installation](#installation)
   - [Claude Code only](#claude-code-only)
   - [All supported agents](#all-supported-agents-claude-code-cursor-codex-etc)
   - [Specific agents](#specific-agents)
-- [First Use](#first-use)
-  - [Changing mode later](#changing-mode-later)
-  - [How auto-detect works](#how-auto-detect-works)
-- [Prerequisites](#prerequisites)
-  - [Token Mode (macOS)](#token-mode-macos)
-  - [Browser Mode (Cross-Platform)](#browser-mode-cross-platform)
-- [How It Works](#how-it-works)
-  - [Token Mode](#token-mode)
-  - [Browser Mode](#browser-mode)
-- [Usage Examples](#usage-examples)
-- [Troubleshooting](#troubleshooting)
+- [Skills](#skills)
+  - [Slack](#slack)
+    - [First Use](#first-use)
+    - [Prerequisites](#prerequisites)
+    - [How It Works](#how-it-works)
+    - [Usage Examples](#usage-examples)
+    - [Troubleshooting](#troubleshooting)
+  - [Setup Check](#setup-check)
+    - [Arguments](#arguments)
+    - [Usage Examples](#usage-examples-1)
 - [License](#license)
 
-## Available Skills
+## Installation
+
+The `skills` CLI installs skills into `~/.agents/skills/` and symlinks them to each agent's directory automatically. In the commands below, replace `<skill>` with the skill you want (for example `slack` or `setup-check`).
+
+### Claude Code only
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill <skill>
+```
+
+### All supported agents (Claude Code, Cursor, Codex, etc.)
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill <skill> --agent '*'
+```
+
+### Specific agents
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill <skill> --agent 'Claude Code,Cursor'
+```
+
+## Skills
 
 ### Slack
 
@@ -48,46 +66,13 @@ Supports three modes:
 - User mentions a Slack channel by name (e.g., `#channel-name`)
 - User wants to interact with Slack Canvas, Huddles, or Workflow Builder (browser mode)
 
-### Setup Check
-
-Audit your Claude Code configuration and surface issues, overlaps, unused components, update status, and misconfigurations. Covers skills, hooks, plugins, rules, settings, security, MCP, memory, and cross-category overlaps.
-
-**Use when:**
-- User asks to "check my setup" or "audit config"
-- User wants to find skill, hook, or plugin overlaps
-- User asks "what's broken?" or wants a cleanup report
-- User wants to check for Claude Code or plugin updates
-- User invokes `/setup-check` (with optional scope: `all`, `updates`, `skills`, `hooks`, `plugins`, `rules`, `settings`, `security`, `mcp`, `memory`, `overlaps`)
-
-Install:
-
-```bash
-npx skills add https://github.com/azmym/agent-skills --skill setup-check
-```
-
-## Installation
-
-The `skills` CLI installs skills into `~/.agents/skills/` and symlinks them to each agent's directory automatically.
-
-### Claude Code only
+**Install:**
 
 ```bash
 npx skills add https://github.com/azmym/agent-skills --skill slack
 ```
 
-### All supported agents (Claude Code, Cursor, Codex, etc.)
-
-```bash
-npx skills add https://github.com/azmym/agent-skills --skill slack --agent '*'
-```
-
-### Specific agents
-
-```bash
-npx skills add https://github.com/azmym/agent-skills --skill slack --agent 'Claude Code,Cursor'
-```
-
-## First Use
+#### First Use
 
 On the very first Slack operation, the agent will prompt you to choose a mode:
 
@@ -99,7 +84,7 @@ Your choice is saved to `~/.agents/config/slack/config.env` and the agent will n
 
 If you select **Browser** mode, the agent will also launch a visible browser window so you can log in to Slack (supports SSO, 2FA, and any login method your workspace uses).
 
-### Changing mode later
+##### Changing mode later
 
 You can change mode at any time by editing the config file:
 
@@ -122,7 +107,7 @@ SLACK_MODE=browser slack-api.sh conversations.history channel=C041RSY6DN2 limit=
 
 The environment variable takes priority over the config file.
 
-### How auto-detect works
+##### How auto-detect works
 
 1. Check if a Playwright session exists with a valid `storageState.json` under `~/.agents/config/slack/sessions/`
 2. If a valid session is found, use **browser** mode
@@ -130,18 +115,18 @@ The environment variable takes priority over the config file.
 
 This means you can set `SLACK_MODE=auto` and freely switch between modes: start a browser session to use browser mode, stop it to fall back to token mode, all without changing config.
 
-## Prerequisites
+#### Prerequisites
 
-### Token Mode (macOS)
+##### Token Mode (macOS)
 
-#### 1. Google Chrome
+**1. Google Chrome**
 
 Chrome must be running with Slack open in a tab.
 
 - Open **Chrome** and navigate to [app.slack.com](https://app.slack.com)
 - Sign in to your workspace
 
-#### 2. Allow JavaScript from Apple Events
+**2. Allow JavaScript from Apple Events**
 
 Required for the skill to extract your session token from Chrome.
 
@@ -150,7 +135,7 @@ Required for the skill to extract your session token from Chrome.
 3. Confirm the prompt
 4. This setting must stay enabled
 
-#### 3. Python 3
+**3. Python 3**
 
 Used for JSON parsing and cookie extraction.
 
@@ -164,7 +149,7 @@ If not installed:
 brew install python3
 ```
 
-#### 4. uvx (from uv)
+**4. uvx (from uv)**
 
 Used to run `pycookiecheat` for extracting the session cookie from Chrome's cookie database.
 
@@ -176,9 +161,9 @@ brew install uv
 uvx --version
 ```
 
-### Browser Mode (Cross-Platform)
+##### Browser Mode (Cross-Platform)
 
-#### 1. Node.js 18+
+**1. Node.js 18+**
 
 Install from [nodejs.org](https://nodejs.org) or via your package manager:
 
@@ -193,9 +178,9 @@ sudo apt-get install -y nodejs
 
 Playwright and Chromium install automatically on first use. No additional setup required.
 
-## How It Works
+#### How It Works
 
-### Token Mode
+##### Token Mode
 
 1. On the first API call, the skill automatically extracts two session tokens from Chrome:
    - **xoxc**: from Slack's `localStorage` via AppleScript
@@ -206,7 +191,7 @@ Playwright and Chromium install automatically on first use. No additional setup 
 
 No manual token management needed.
 
-### Browser Mode
+##### Browser Mode
 
 1. A local Playwright Chromium instance is launched
 2. You log in to Slack once (manually for SSO/2FA, or automated for email/password)
@@ -223,7 +208,7 @@ Browser mode also enables **UI automation** for Slack features that have no API:
 - Admin and settings pages
 - Visual message verification via screenshots
 
-## Usage Examples
+#### Usage Examples
 
 Once installed, just ask your agent naturally:
 
@@ -240,9 +225,9 @@ Once installed, just ask your agent naturally:
 | "Create a canvas in #project-alpha" | Uses browser mode to create a Slack Canvas |
 | "Take a screenshot of the #design channel" | Captures a visual snapshot via browser mode |
 
-## Troubleshooting
+#### Troubleshooting
 
-### Token Mode
+##### Token Mode
 
 | Problem | Fix |
 |---|---|
@@ -253,7 +238,7 @@ Once installed, just ask your agent naturally:
 | `uvx: command not found` | Install uv: `brew install uv` |
 | Scripts not executing | Run `chmod +x` on scripts in `scripts/` |
 
-### Browser Mode
+##### Browser Mode
 
 | Problem | Fix |
 |---|---|
@@ -264,6 +249,56 @@ Once installed, just ask your agent naturally:
 | `no_teams_found` error | Slack hasn't loaded workspace data yet; wait a few seconds and retry |
 | Slow API responses | Browser mode has overhead; for high-frequency calls on macOS, use `SLACK_MODE=token` |
 | SSO login flow | Use `login-manual` to open a visible browser window and log in manually |
+
+---
+
+### Setup Check
+
+Audit your Claude Code configuration and surface issues, overlaps, unused components, update status, and misconfigurations. Covers skills, hooks, plugins, rules, settings, security, MCP, memory, and cross-category overlaps.
+
+**Use when:**
+- User asks to "check my setup" or "audit config"
+- User wants to find duplicate or conflicting skills, hooks, plugins, or rules
+- User asks "what's broken?" or wants a cleanup report
+- User wants to check Claude Code or plugin updates
+- User asks to review MCP servers or memory state
+- User invokes `/setup-check` with an optional scope
+
+**Install:**
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill setup-check
+```
+
+#### Arguments
+
+Invoke as `/setup-check [scope] [optional goal message]`. Default scope is `all`.
+
+| Arg | Scope |
+|-----|-------|
+| `all` | Full audit across every category below, including updates |
+| `updates` | Claude Code CLI and plugin version/update checks |
+| `skills` | Skills: duplicates, broken symlinks, unused, placeholders |
+| `hooks` | Hooks: conflicts, broken paths, event collisions |
+| `plugins` | Plugins: disabled, stale cache, version tracking |
+| `rules` | Rules: contradictions, overlap with plugin behavior |
+| `settings` | Settings files: duplicates, conflicting keys (health only) |
+| `security` | Security: broad permissions, skipped prompts, orphaned MCP perms |
+| `mcp` | MCP servers: empty configs, duplicate servers |
+| `memory` | Memory: empty dirs, stale entries, index mismatches |
+| `overlaps` | Cross-category overlap detection only |
+
+Multiple scopes are supported: `/setup-check skills plugins` runs both.
+
+#### Usage Examples
+
+| Prompt | What happens |
+|---|---|
+| "Check my setup" | Runs the full audit and reports issues grouped by category |
+| "What's broken in my Claude Code config?" | Runs `all` and highlights errors, conflicts, and misconfigurations |
+| "Find overlaps between my skills and plugins" | Runs the `overlaps` cross-category detector |
+| "/setup-check updates" | Checks Claude Code CLI and plugin update status |
+| "/setup-check skills hooks" | Audits only the skills and hooks categories |
 
 ## License
 
