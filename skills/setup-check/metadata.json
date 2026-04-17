@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "organization": "Mahmoud Azmy",
+  "date": "April 2026",
+  "abstract": "Audit Claude Code configuration for issues, overlaps, unused components, update status, and misconfigurations. Triggers on 'check my setup', 'audit config', '/setup-check'. Covers skills, hooks, plugins, rules, settings, security, MCP, memory, and cross-category overlaps."
+}

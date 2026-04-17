@@ -26,6 +26,23 @@ Supports three modes:
 - User mentions a Slack channel by name (e.g., `#channel-name`)
 - User wants to interact with Slack Canvas, Huddles, or Workflow Builder (browser mode)
 
+### Setup Check
+
+Audit your Claude Code configuration and surface issues, overlaps, unused components, update status, and misconfigurations. Covers skills, hooks, plugins, rules, settings, security, MCP, memory, and cross-category overlaps.
+
+**Use when:**
+- User asks to "check my setup" or "audit config"
+- User wants to find skill, hook, or plugin overlaps
+- User asks "what's broken?" or wants a cleanup report
+- User wants to check for Claude Code or plugin updates
+- User invokes `/setup-check` (with optional scope: `all`, `updates`, `skills`, `hooks`, `plugins`, `rules`, `settings`, `security`, `mcp`, `memory`, `overlaps`)
+
+Install:
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill setup-check
+```
+
 ## Installation
 
 The `skills` CLI installs skills into `~/.agents/skills/` and symlinks them to each agent's directory automatically.
