@@ -2,6 +2,28 @@
 
 A collection of skills for AI coding agents.
 
+## Table of Contents
+
+- [Skills](#available-skills)
+  - [Slack](#slack) — read, summarize, search, post, react, and manage channels
+  - [Setup Check](#setup-check) — audit Claude Code configuration for issues and overlaps
+- [Installation](#installation)
+  - [Claude Code only](#claude-code-only)
+  - [All supported agents](#all-supported-agents-claude-code-cursor-codex-etc)
+  - [Specific agents](#specific-agents)
+- [First Use](#first-use)
+  - [Changing mode later](#changing-mode-later)
+  - [How auto-detect works](#how-auto-detect-works)
+- [Prerequisites](#prerequisites)
+  - [Token Mode (macOS)](#token-mode-macos)
+  - [Browser Mode (Cross-Platform)](#browser-mode-cross-platform)
+- [How It Works](#how-it-works)
+  - [Token Mode](#token-mode)
+  - [Browser Mode](#browser-mode)
+- [Usage Examples](#usage-examples)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
 ## Available Skills
 
 ### Slack
