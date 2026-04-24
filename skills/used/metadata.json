@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "organization": "Mahmoud Azmy",
+  "date": "April 2026",
+  "abstract": "Reports which skills, hooks, rules, and plugins were activated during a Claude Code prompt or session. Invoked via /used (last prompt) or /used --session (full session).",
+  "references": []
+}
