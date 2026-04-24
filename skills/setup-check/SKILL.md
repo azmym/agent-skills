@@ -46,7 +46,7 @@ You MUST read ALL of these paths for the relevant category. Do not skip any. Mis
 - npm registry (run `npm view @anthropic-ai/claude-code version 2>/dev/null` for latest published version; requires network)
 - `~/.claude/plugins/installed_plugins.json` (plugin versions, `gitCommitSha`, `lastUpdated`)
 - `~/.claude/plugins/cache/` (all cached versions; detect stale ones not matching active `installPath`)
-- `claude plugins update <name>@<marketplace>` output (authoritative source for update availability)
+- `claude plugins update <name>@<marketplace> -s <scope>` output (authoritative source for update availability; the scope flag is required and must come from each plugin's `scope` field in `installed_plugins.json`)
 
 **Skills:**
 - `~/.claude/skills/` (symlinks; check for broken links with `ls -la`)
@@ -72,10 +72,11 @@ You MUST read ALL of these paths for the relevant category. Do not skip any. Mis
 **Security:**
 - `~/.claude/settings.json` (check `skipDangerousModePermissionPrompt`, permissions)
 - `~/.claude/settings.local.json` (check permissions for broad `Bash(<command>:*)` patterns)
-- `~/.claude/.mcp.json` (cross-reference MCP permissions against configured servers)
+- MCP server sources (for orphaned-permission detection): `~/.claude.json` → `mcpServers` (user-scope, authoritative), project-level `.mcp.json`, `~/.claude/.mcp.json` (if present), `claude mcp list` stdout (fallback)
 
 **MCP:**
-- `~/.claude/.mcp.json` (global)
+- `~/.claude.json` → `mcpServers` key (user-scope servers; authoritative location)
+- `~/.claude/.mcp.json` (legacy/optional; often absent)
 - Project-level `.mcp.json` files in workspace directories
 
 **Memory:**
@@ -88,10 +89,12 @@ You MUST read ALL of these paths for the relevant category. Do not skip any. Mis
 1. **Claude Code CLI version:** Run `claude --version` to get current version. Then run `npm view @anthropic-ai/claude-code version 2>/dev/null` to get the latest published version. Compare the two. If npm is unavailable or network fails, report current version as `i` (INFO) only with message "Could not check for updates".
 2. **Plugin version freshness:** For each plugin in `installed_plugins.json`:
    - If `version` is `"unknown"`, flag as `⚠` (WARN) with recommendation to reinstall for version tracking
-   - Run `claude plugins update <name>@<marketplace>` for each plugin (the plugin key in `installed_plugins.json` is already in `name@marketplace` format). Parse the output:
+   - Read the plugin's `scope` field (values: `user`, `project`, `local`, `managed`) from its entry in `installed_plugins.json`. `claude plugins update` defaults to `-s user`, so the scope flag MUST be passed explicitly for non-user scopes or the command will fail with "Plugin X is not installed at scope user".
+   - Run `claude plugins update <name>@<marketplace> -s <scope>` for each plugin (the plugin key in `installed_plugins.json` is already in `name@marketplace` format). Parse the output:
      - If output contains "already at the latest version", mark as `✓` with current version
      - If output indicates an update was applied (version changed), mark as `⬆` with old and new versions
-     - If the command fails, fall back to checking `lastUpdated`: flag plugins not updated in 30+ days as `i` (INFO, "not updated in N days, possibly stale")
+     - If the command fails with "not installed at scope <X>", retry once with `-s project`, then `-s user` as fallbacks before giving up
+     - If the command fails for any other reason, fall back to checking `lastUpdated`: flag plugins not updated in 30+ days as `i` (INFO, "not updated in N days, possibly stale")
    - **Important:** Do NOT compare `gitCommitSha` against the marketplace repo HEAD. Marketplace repos contain multiple plugins, so repo HEAD advances when any plugin changes, causing false positives for unrelated plugins.
    - Show one finding per plugin, using the full `name@marketplace` identifier so users can copy-paste directly into commands
 3. **Stale plugin cache:** Detect version directories in `~/.claude/plugins/cache/<marketplace>/<plugin>/` where more than one version directory exists. The active version is the one matching `installPath` in `installed_plugins.json`. Other directories are stale cache. Flag as `⚠` (WARN) with recommendation to clean up.
@@ -127,12 +130,12 @@ You MUST read ALL of these paths for the relevant category. Do not skip any. Mis
 ### Security
 1. **Skipped prompts:** `skipDangerousModePermissionPrompt` set to `true` in settings
 2. **Broad permissions:** `Bash(<command>:*)` patterns that allow arbitrary arguments (especially `python3:*`, `osascript:*`, `chmod:*`, `xargs:*`)
-3. **Orphaned MCP permissions:** MCP tool permissions (`mcp__<server>__*`) for servers not in any `.mcp.json`
+3. **Orphaned MCP permissions:** MCP tool permissions (`mcp__<server>__*`) for servers not found in any configured source. **Important:** Claude Code stores user-scope MCP servers in `~/.claude.json` under the `mcpServers` key, NOT in `~/.claude/.mcp.json` (which often does not exist). Build the known-server set from multiple sources in this order: (a) `mcpServers` keys in `~/.claude.json`, (b) `mcpServers` keys in any project-level `.mcp.json` in the current workspace, (c) `mcpServers` keys in `~/.claude/.mcp.json` if it exists, (d) fallback: parse `claude mcp list` stdout (lines like `^  <name>: ... - [✓✗] ...`). Flag a permission as orphaned only when `<server>` is absent from ALL sources.
 4. **Credential exposure:** Credential files with loose filesystem permissions
 
 ### MCP
-1. **Empty configs:** `.mcp.json` with no servers defined
-2. **Duplicate servers:** Same server configured at multiple scopes
+1. **Empty configs:** All MCP sources empty (no `mcpServers` in `~/.claude.json`, no project `.mcp.json`, no `~/.claude/.mcp.json`)
+2. **Duplicate servers:** Same server name configured at multiple scopes (e.g., in both `~/.claude.json` and a project `.mcp.json`)
 
 ### Memory
 1. **Empty directory:** Memory dir exists but has no files
@@ -398,7 +401,7 @@ Rank recommendations across both dimensions by severity (health ERROR first, the
 
 1. Parse arguments to determine scope. Separate category keywords from a quoted goal message (if any).
 2. Read ALL mandatory scan paths for selected categories (use parallel tool calls where possible).
-3. Run update checks first (if `all` or `updates` is selected): `claude --version`, `npm view`, `claude plugins update <name>@<marketplace>` for each plugin, read `installed_plugins.json`.
+3. Run update checks first (if `all` or `updates` is selected): `claude --version`, `npm view`, read `installed_plugins.json`, then `claude plugins update <name>@<marketplace> -s <scope>` for each plugin (scope read from the plugin's entry in `installed_plugins.json`).
 4. Run checks for each remaining selected category (including the Security category).
 5. Run overlap checks (if `all` or `overlaps` is selected).
 6. Calculate dual scores:
