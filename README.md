@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/assets/banner.png" alt="Agent Skills — plug-in skill modules that supercharge your AI coding agent" width="100%"/>
+</p>
+
 <h1 align="center">Agent Skills</h1>
 
 <p align="center">
