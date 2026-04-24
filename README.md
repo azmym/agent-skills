@@ -1,36 +1,42 @@
 # Agent Skills
 
-A collection of skills for AI coding agents.
+A curated collection of skills that extend AI coding agents (Claude Code, Cursor, Codex, and others) with real, day-to-day capabilities: talking to Slack, auditing your own setup, and more to come.
+
+If you've ever wanted your agent to "just read that Slack thread" or "tell me what's broken in my config," this repository is for you. Each skill is a self-contained bundle of prompts, scripts, and docs that your agent loads on demand.
 
 ## Table of Contents
 
+- [What is a "skill"?](#what-is-a-skill)
 - [Installation](#installation)
   - [Claude Code only](#claude-code-only)
-  - [All supported agents](#all-supported-agents-claude-code-cursor-codex-etc)
+  - [All supported agents](#all-supported-agents)
   - [Specific agents](#specific-agents)
-- [Skills](#skills)
+- [Available Skills](#available-skills)
   - [Slack](#slack)
-    - [First Use](#first-use)
-    - [Prerequisites](#prerequisites)
-    - [How It Works](#how-it-works)
-    - [Usage Examples](#usage-examples)
-    - [Troubleshooting](#troubleshooting)
   - [Setup Check](#setup-check)
-    - [Arguments](#arguments)
-    - [Usage Examples](#usage-examples-1)
 - [License](#license)
+
+## What is a "skill"?
+
+A skill is a focused capability you drop into your agent's skills directory. Once installed, your agent can recognize when a user intent matches the skill (for example, "summarize this Slack channel") and invoke it automatically, no extra plumbing required.
+
+Think of skills as plug-in expertise. You install the ones you need, your agent becomes better at those tasks, and nothing else changes.
 
 ## Installation
 
-The `skills` CLI installs skills into `~/.agents/skills/` and symlinks them to each agent's directory automatically. In the commands below, replace `<skill>` with the skill you want (for example `slack` or `setup-check`).
+The `skills` CLI installs each skill into `~/.agents/skills/` and symlinks it into every agent's skills directory for you. In the commands below, replace `<skill>` with the name of the skill you want, for example `slack` or `setup-check`.
 
 ### Claude Code only
+
+Use this if Claude Code is the only agent you run, or the only one you want this skill wired into.
 
 ```bash
 npx skills add https://github.com/azmym/agent-skills --skill <skill>
 ```
 
-### All supported agents (Claude Code, Cursor, Codex, etc.)
+### All supported agents
+
+If you hop between agents (Claude Code, Cursor, Codex, and others), install once and cover them all:
 
 ```bash
 npx skills add https://github.com/azmym/agent-skills --skill <skill> --agent '*'
@@ -38,55 +44,61 @@ npx skills add https://github.com/azmym/agent-skills --skill <skill> --agent '*'
 
 ### Specific agents
 
+Pick a subset by passing a comma-separated list:
+
 ```bash
 npx skills add https://github.com/azmym/agent-skills --skill <skill> --agent 'Claude Code,Cursor'
 ```
 
-## Skills
+## Available Skills
 
 ### Slack
 
-Interact with Slack directly from your AI coding agent: read, summarize, search, post messages, react, pin, and manage channels using the Slack Web API.
+Bring Slack into your agent's workflow. Read channels, summarize threads, search messages, post updates, react, pin, and (in browser mode) even drive features that have no public API like Canvas and Huddles.
 
-Supports three modes:
+This skill is designed around one idea: you shouldn't have to context-switch into Slack just to ask "what did the team decide?" Just ask your agent.
 
-| Mode | Config Value | Behavior |
-|------|-------------|----------|
-| **Auto-detect** | `auto` (recommended) | Uses browser mode if a session exists, otherwise falls back to token mode |
-| **Token** | `token` | Direct curl calls using Chrome session tokens. Fast. macOS only |
-| **Browser** | `browser` | API calls through local Playwright browser. Cross-platform. Also enables UI automation |
+#### Three operating modes
 
-**Use when:**
-- User shares a Slack URL
-- User asks to read or summarize a channel
-- User searches Slack messages
-- User asks to send/post a message
-- User asks to react to or pin a message
-- User looks up a Slack user
-- User mentions a Slack channel by name (e.g., `#channel-name`)
-- User wants to interact with Slack Canvas, Huddles, or Workflow Builder (browser mode)
+You pick the mode that matches your environment. Most people start with `auto` and never touch it again.
 
-**Install:**
+| Mode | Config value | When it's the right fit |
+|------|--------------|-------------------------|
+| Auto-detect (recommended) | `auto` | You want browser mode's full feature set when a session exists, and token mode's speed the rest of the time. Zero babysitting. |
+| Token | `token` | macOS only. You want the fastest possible response times and are happy to keep Chrome open to Slack. |
+| Browser | `browser` | You're on Linux or Windows, or you need UI automation features like Canvas, Huddles, or Workflow Builder. |
+
+#### When your agent will use this skill
+
+Your agent reaches for the Slack skill when you do things like:
+
+- Paste a Slack URL and ask "what's this about?"
+- Say "summarize #engineering from today" or "what did Alex say in #standup this week?"
+- Ask it to "post 'deploy complete' in #releases" or "react with :tada: to that message"
+- Mention a channel by name, for example `#design-reviews`
+- Ask for Slack Canvas creation, Huddle interaction, or Workflow Builder changes (browser mode only)
+
+#### Install
 
 ```bash
 npx skills add https://github.com/azmym/agent-skills --skill slack
 ```
 
-#### First Use
+#### First run
 
-On the very first Slack operation, the agent will prompt you to choose a mode:
+The first time you trigger anything Slack-related, the agent will ask you to pick a mode:
 
-1. **Token** (macOS only): Fastest. Extracts tokens from Chrome automatically. Requires Chrome with Slack open, AppleScript enabled, and `uvx`.
-2. **Browser** (cross-platform): Uses a local Playwright browser. Works on macOS, Linux, and Windows. Requires Node.js 18+. Supports SSO and 2FA login.
-3. **Auto-detect** (recommended): Uses browser mode when a session exists, falls back to token mode otherwise.
+1. **Token** (macOS only): Fastest option. Pulls session tokens out of Chrome automatically. Requires Chrome running with Slack open, AppleScript permission, and `uvx`.
+2. **Browser** (cross-platform): Uses a local Playwright browser. Works on macOS, Linux, and Windows. Supports SSO, 2FA, and any login flow your workspace uses.
+3. **Auto-detect** (recommended): Uses browser mode when a Playwright session is live, falls back to token mode otherwise.
 
-Your choice is saved to `~/.agents/config/slack/config.env` and the agent will never ask again.
+Your choice is saved to `~/.agents/config/slack/config.env` and you'll never be asked again.
 
-If you select **Browser** mode, the agent will also launch a visible browser window so you can log in to Slack (supports SSO, 2FA, and any login method your workspace uses).
+If you pick Browser mode, the agent opens a real browser window so you can complete your normal Slack login (SSO, 2FA, whatever you usually use). After that first login, sessions are reused.
 
-##### Changing mode later
+#### Changing mode later
 
-You can change mode at any time by editing the config file:
+You can change your mind at any time by editing one file:
 
 ```bash
 # Switch to token mode
@@ -95,210 +107,205 @@ echo 'SLACK_MODE=token' > ~/.agents/config/slack/config.env
 # Switch to browser mode
 echo 'SLACK_MODE=browser' > ~/.agents/config/slack/config.env
 
-# Switch to auto-detect
+# Switch back to auto-detect
 echo 'SLACK_MODE=auto' > ~/.agents/config/slack/config.env
 ```
 
-Or override per-call with an environment variable:
+You can also override per invocation using an environment variable (handy for one-off calls):
 
 ```bash
 SLACK_MODE=browser slack-api.sh conversations.history channel=C041RSY6DN2 limit=20
 ```
 
-The environment variable takes priority over the config file.
+The environment variable wins over the config file.
 
-##### How auto-detect works
+#### How auto-detect decides
 
-1. Check if a Playwright session exists with a valid `storageState.json` under `~/.agents/config/slack/sessions/`
-2. If a valid session is found, use **browser** mode
-3. If no valid session exists, fall back to **token** mode
+1. It looks for a valid Playwright session at `~/.agents/config/slack/sessions/*/storageState.json`.
+2. If a valid session is found, it uses browser mode.
+3. Otherwise, it falls back to token mode.
 
-This means you can set `SLACK_MODE=auto` and freely switch between modes: start a browser session to use browser mode, stop it to fall back to token mode, all without changing config.
+In practice: start a browser session when you want the full feature set, stop it when you want maximum speed. No config edits required.
 
 #### Prerequisites
 
-##### Token Mode (macOS)
+##### Token mode (macOS)
 
-**1. Google Chrome**
+1. **Google Chrome running with Slack open.** Open Chrome, visit [app.slack.com](https://app.slack.com), and sign in to your workspace.
 
-Chrome must be running with Slack open in a tab.
+2. **Allow JavaScript from Apple Events.** This permission lets the skill read your Slack session token out of the page.
 
-- Open **Chrome** and navigate to [app.slack.com](https://app.slack.com)
-- Sign in to your workspace
+   In Chrome, go to **View > Developer > Allow JavaScript from Apple Events** and confirm the prompt. Leave it on.
 
-**2. Allow JavaScript from Apple Events**
+3. **Python 3**, used for JSON parsing and cookie extraction:
 
-Required for the skill to extract your session token from Chrome.
+   ```bash
+   python3 --version
+   # If missing:
+   brew install python3
+   ```
 
-1. Open Chrome
-2. Go to **View > Developer > Allow JavaScript from Apple Events**
-3. Confirm the prompt
-4. This setting must stay enabled
+4. **uvx (from uv)**, used to run `pycookiecheat` against Chrome's cookie database:
 
-**3. Python 3**
+   ```bash
+   brew install uv
+   uvx --version   # sanity check
+   ```
 
-Used for JSON parsing and cookie extraction.
+##### Browser mode (any OS)
 
-```bash
-python3 --version
-```
+1. **Node.js 18 or newer.** Install from [nodejs.org](https://nodejs.org) or your package manager:
 
-If not installed:
+   ```bash
+   # macOS
+   brew install node
 
-```bash
-brew install python3
-```
+   # Ubuntu / Debian
+   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   ```
 
-**4. uvx (from uv)**
+Playwright and Chromium install themselves the first time they run. Nothing else to set up.
 
-Used to run `pycookiecheat` for extracting the session cookie from Chrome's cookie database.
+#### How it works under the hood
 
-```bash
-# Install uv (which provides uvx)
-brew install uv
+If you're curious (or debugging), here's what each mode actually does.
 
-# Verify
-uvx --version
-```
+##### Token mode
 
-##### Browser Mode (Cross-Platform)
+1. On the first API call, the skill pulls two session tokens out of Chrome:
+   - `xoxc` from Slack's `localStorage` via AppleScript
+   - `xoxd` from Chrome's cookie database via `pycookiecheat`
+2. Tokens are cached in `~/.agents/config/slack/tokens.env`.
+3. If Slack rejects a token with `invalid_auth`, the skill re-extracts and retries automatically.
+4. Every call is a plain `curl` request to the Slack Web API.
 
-**1. Node.js 18+**
+You never manage tokens by hand.
 
-Install from [nodejs.org](https://nodejs.org) or via your package manager:
+##### Browser mode
 
-```bash
-# macOS
-brew install node
+1. A local Playwright Chromium instance launches.
+2. You log in once (manually for SSO/2FA, or automated for email/password).
+3. Session state (cookies plus `localStorage`) is saved to `~/.agents/config/slack/sessions/<id>/storageState.json`.
+4. Each API call spawns a short-lived Chromium process, restores your session, runs `fetch()` inside the page context, and exits.
+5. If no active session is found and mode is `auto`, the skill quietly falls back to token mode.
 
-# Ubuntu/Debian
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs
-```
-
-Playwright and Chromium install automatically on first use. No additional setup required.
-
-#### How It Works
-
-##### Token Mode
-
-1. On the first API call, the skill automatically extracts two session tokens from Chrome:
-   - **xoxc**: from Slack's `localStorage` via AppleScript
-   - **xoxd**: from Chrome's cookie database via `pycookiecheat`
-2. Tokens are saved to `~/.agents/config/slack/tokens.env`
-3. If a token expires (`invalid_auth`), the skill auto-refreshes and retries
-4. API calls are made via `curl` directly to the Slack Web API
-
-No manual token management needed.
-
-##### Browser Mode
-
-1. A local Playwright Chromium instance is launched
-2. You log in to Slack once (manually for SSO/2FA, or automated for email/password)
-3. Session state (cookies + localStorage) is saved to `~/.agents/config/slack/sessions/<id>/storageState.json`
-4. API calls launch a short-lived Chromium process, restore the session state, execute `fetch()`, and exit
-5. If no browser session is active and mode is `auto`, the skill falls back to token mode
-
-Browser mode also enables **UI automation** for Slack features that have no API:
+Browser mode also unlocks UI automation for Slack surfaces that have no public API:
 
 - Canvas creation and editing
 - Huddle interactions
 - Workflow Builder configuration
 - Slack Connect invitations
 - Admin and settings pages
-- Visual message verification via screenshots
+- Visual verification via screenshots
 
-#### Usage Examples
+#### Usage examples
 
-Once installed, just ask your agent naturally:
+Once installed, you don't call anything by name. Just talk to your agent:
 
-| Prompt | What happens |
-|---|---|
-| "Summarize #engineering from today" | Reads channel history and summarizes |
-| "What did John say in #standup this week?" | Searches messages by user and channel |
-| "Post 'deploy complete' in #releases" | Sends a message to the channel |
+| You say | What the skill does |
+|---------|---------------------|
+| "Summarize #engineering from today" | Pulls recent channel history and summarizes it |
+| "What did John say in #standup this week?" | Searches messages filtered by user and channel |
+| "Post 'deploy complete' in #releases" | Sends a message on your behalf |
 | "React with thumbsup to that message" | Adds an emoji reaction |
-| _Paste a Slack URL_ | Reads the message or thread at that URL |
-| "Search Slack for deployment errors" | Searches across all channels |
+| (You paste a Slack message URL) | Reads the specific message or thread |
+| "Search Slack for deployment errors" | Runs a cross-channel search |
 | "Pin that message" | Pins the referenced message |
-| "Who is U04ABC123?" | Looks up user info by ID |
-| "Create a canvas in #project-alpha" | Uses browser mode to create a Slack Canvas |
+| "Who is U04ABC123?" | Looks up user info by Slack ID |
+| "Create a canvas in #project-alpha" | Opens browser mode and creates a Canvas |
 | "Take a screenshot of the #design channel" | Captures a visual snapshot via browser mode |
 
 #### Troubleshooting
 
-##### Token Mode
+Most issues fall into one of two buckets. Find the symptom, apply the fix.
 
-| Problem | Fix |
-|---|---|
-| `ERROR: Could not find Chrome cookie database` | Make sure Chrome is running |
-| `ERROR: Could not extract xoxc token` | Open [app.slack.com](https://app.slack.com) in a Chrome tab and enable **Allow JavaScript from Apple Events** |
-| `ERROR: Could not extract xoxd cookie` | Run `uvx --from pycookiecheat python3 -c "print('ok')"` to verify pycookiecheat works |
-| `invalid_auth` keeps failing | Close and reopen the Slack tab in Chrome, then retry |
-| `uvx: command not found` | Install uv: `brew install uv` |
-| Scripts not executing | Run `chmod +x` on scripts in `scripts/` |
+##### Token mode
 
-##### Browser Mode
+| Symptom | Try this |
+|---------|----------|
+| `ERROR: Could not find Chrome cookie database` | Make sure Chrome is actually running. |
+| `ERROR: Could not extract xoxc token` | Open [app.slack.com](https://app.slack.com) in Chrome and enable **View > Developer > Allow JavaScript from Apple Events**. |
+| `ERROR: Could not extract xoxd cookie` | Sanity-check pycookiecheat: `uvx --from pycookiecheat python3 -c "print('ok')"`. |
+| `invalid_auth` keeps failing | Close and reopen the Slack tab in Chrome, then try again. |
+| `uvx: command not found` | Install uv: `brew install uv`. |
+| Scripts won't execute | Run `chmod +x` on the files inside `scripts/`. |
 
-| Problem | Fix |
-|---|---|
-| `Node.js is required but not found` | Install Node.js 18+ from https://nodejs.org |
-| `no_browser_session` | Run `slack-browser-session.sh start` first |
-| `browserType.launch: Executable doesn't exist` | Run `slack-browser-session.sh start` (auto-installs Chromium) |
-| Login page keeps showing | Session may have expired; run `stop` then `login-manual` again |
-| `no_teams_found` error | Slack hasn't loaded workspace data yet; wait a few seconds and retry |
-| Slow API responses | Browser mode has overhead; for high-frequency calls on macOS, use `SLACK_MODE=token` |
-| SSO login flow | Use `login-manual` to open a visible browser window and log in manually |
+##### Browser mode
+
+| Symptom | Try this |
+|---------|----------|
+| `Node.js is required but not found` | Install Node.js 18+ from [nodejs.org](https://nodejs.org). |
+| `no_browser_session` | Start one: `slack-browser-session.sh start`. |
+| `browserType.launch: Executable doesn't exist` | Run `slack-browser-session.sh start`; it auto-installs Chromium. |
+| Login page keeps reappearing | Your session likely expired. `stop` it, then `login-manual` to sign in again. |
+| `no_teams_found` | Slack hasn't finished loading workspace data. Wait a few seconds and retry. |
+| API responses feel slow | Browser mode carries launch overhead. On macOS, switch high-frequency calls to `SLACK_MODE=token`. |
+| SSO login | Use `login-manual`; it opens a visible browser so you can complete SSO normally. |
 
 ---
 
 ### Setup Check
 
-Audit your Claude Code configuration and surface issues, overlaps, unused components, update status, and misconfigurations. Covers skills, hooks, plugins, rules, settings, security, MCP, memory, and cross-category overlaps.
+Audit your Claude Code configuration and get a clear, grouped report of what's healthy, what's conflicting, and what's drifted out of date. This is the skill you run when something "feels off" and you want a second opinion before you start ripping things out.
 
-**Use when:**
-- User asks to "check my setup" or "audit config"
-- User wants to find duplicate or conflicting skills, hooks, plugins, or rules
-- User asks "what's broken?" or wants a cleanup report
-- User wants to check Claude Code or plugin updates
-- User asks to review MCP servers or memory state
-- User invokes `/setup-check` with an optional scope
+#### What it checks
 
-**Install:**
+- Skills: duplicates, broken symlinks, unused entries, placeholders
+- Hooks: conflicts, missing paths, event collisions
+- Plugins: disabled, stale cache, version drift
+- Rules: internal contradictions, overlap with plugin behavior
+- Settings: duplicate or conflicting keys (health only, no rewrites)
+- Security: overly broad permissions, skipped prompts, orphaned MCP permissions
+- MCP servers: empty configs, duplicates
+- Memory: empty directories, stale entries, index mismatches
+- Cross-category overlaps: for example, a rule duplicating what a plugin already enforces
+- Updates: Claude Code CLI and plugin versions
+
+#### When your agent will use this skill
+
+- You ask "check my setup" or "audit my config"
+- You say "what's broken?" or "find duplicates"
+- You want a cleanup report before adding more plugins
+- You ask about Claude Code or plugin update status
+- You want to review MCP servers or memory state
+- You invoke `/setup-check` directly, optionally with a scope
+
+#### Install
 
 ```bash
 npx skills add https://github.com/azmym/agent-skills --skill setup-check
 ```
 
-#### Arguments
+#### Scope arguments
 
-Invoke as `/setup-check [scope] [optional goal message]`. Default scope is `all`.
+Run as `/setup-check [scope] [optional goal message]`. The default scope is `all`.
 
-| Arg | Scope |
-|-----|-------|
-| `all` | Full audit across every category below, including updates |
-| `updates` | Claude Code CLI and plugin version/update checks |
-| `skills` | Skills: duplicates, broken symlinks, unused, placeholders |
-| `hooks` | Hooks: conflicts, broken paths, event collisions |
-| `plugins` | Plugins: disabled, stale cache, version tracking |
-| `rules` | Rules: contradictions, overlap with plugin behavior |
-| `settings` | Settings files: duplicates, conflicting keys (health only) |
-| `security` | Security: broad permissions, skipped prompts, orphaned MCP perms |
-| `mcp` | MCP servers: empty configs, duplicate servers |
-| `memory` | Memory: empty dirs, stale entries, index mismatches |
+| Scope | What it audits |
+|-------|----------------|
+| `all` | Everything below, plus update checks |
+| `updates` | Claude Code CLI and plugin versions |
+| `skills` | Duplicates, broken symlinks, unused, placeholders |
+| `hooks` | Conflicts, broken paths, event collisions |
+| `plugins` | Disabled, stale cache, version tracking |
+| `rules` | Contradictions, overlap with plugin behavior |
+| `settings` | Duplicates, conflicting keys (health only) |
+| `security` | Broad permissions, skipped prompts, orphaned MCP perms |
+| `mcp` | Empty configs, duplicate servers |
+| `memory` | Empty dirs, stale entries, index mismatches |
 | `overlaps` | Cross-category overlap detection only |
 
-Multiple scopes are supported: `/setup-check skills plugins` runs both.
+You can combine scopes. For example, `/setup-check skills plugins` runs both.
 
-#### Usage Examples
+#### Usage examples
 
-| Prompt | What happens |
-|---|---|
-| "Check my setup" | Runs the full audit and reports issues grouped by category |
-| "What's broken in my Claude Code config?" | Runs `all` and highlights errors, conflicts, and misconfigurations |
+| You say | What happens |
+|---------|--------------|
+| "Check my setup" | Full audit, grouped by category |
+| "What's broken in my Claude Code config?" | Runs `all` and highlights errors, conflicts, misconfigurations |
 | "Find overlaps between my skills and plugins" | Runs the `overlaps` cross-category detector |
-| "/setup-check updates" | Checks Claude Code CLI and plugin update status |
-| "/setup-check skills hooks" | Audits only the skills and hooks categories |
+| `/setup-check updates` | CLI and plugin update status only |
+| `/setup-check skills hooks` | Audits just those two categories |
 
 ## License
 
