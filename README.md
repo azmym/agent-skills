@@ -1,11 +1,46 @@
-# Agent Skills
+<h1 align="center">Agent Skills</h1>
 
-A curated collection of skills that extend AI coding agents (Claude Code, Cursor, Codex, and others) with real, day-to-day capabilities: talking to Slack, auditing your own setup, and more to come.
+<p align="center">
+  <b>Plug-and-play skills that supercharge Claude Code, Cursor, Codex, and other AI coding agents.</b><br/>
+  Talk to Slack, audit your setup, and keep stacking capabilities with one command.
+</p>
+
+<p align="center">
+  <a href="https://github.com/azmym/agent-skills/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/azmym/agent-skills?color=blue"></a>
+  <a href="https://github.com/azmym/agent-skills/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/azmym/agent-skills?style=social"></a>
+  <a href="https://github.com/azmym/agent-skills/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/azmym/agent-skills"></a>
+  <a href="https://github.com/azmym/agent-skills/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/azmym/agent-skills"></a>
+  <a href="https://github.com/azmym/agent-skills/pulls"><img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen"></a>
+</p>
+
+<p align="center">
+  <a href="#quickstart">Quickstart</a> •
+  <a href="#available-skills">Skills</a> •
+  <a href="#installation">Install</a> •
+  <a href="https://github.com/azmym/agent-skills/discussions">Discussions</a>
+</p>
+
+---
+
+## Quickstart
+
+Install the Slack skill into every agent you use in one line:
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill slack --agent '*'
+```
+
+Then just talk to your agent: *"Summarize #engineering from today"* or *"Post 'deploy complete' in #releases."* That's it.
+
+> New here? Start with [What is a "skill"?](#what-is-a-skill) for the 30-second mental model.
+
+---
 
 If you've ever wanted your agent to "just read that Slack thread" or "tell me what's broken in my config," this repository is for you. Each skill is a self-contained bundle of prompts, scripts, and docs that your agent loads on demand.
 
 ## Table of Contents
 
+- [Quickstart](#quickstart)
 - [What is a "skill"?](#what-is-a-skill)
 - [Installation](#installation)
   - [Claude Code only](#claude-code-only)
@@ -14,6 +49,7 @@ If you've ever wanted your agent to "just read that Slack thread" or "tell me wh
 - [Available Skills](#available-skills)
   - [Slack](#slack)
   - [Setup Check](#setup-check)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## What is a "skill"?
@@ -307,6 +343,16 @@ You can combine scopes. For example, `/setup-check skills plugins` runs both.
 | `/setup-check updates` | CLI and plugin update status only |
 | `/setup-check skills hooks` | Audits just those two categories |
 
+## Contributing
+
+Got an idea for a new skill, a fix, or a polish on the docs? You're in the right place:
+
+- Browse or file an issue: [github.com/azmym/agent-skills/issues](https://github.com/azmym/agent-skills/issues)
+- Start a conversation: [github.com/azmym/agent-skills/discussions](https://github.com/azmym/agent-skills/discussions)
+- Open a pull request, small is beautiful
+
+If this repo saved you a context switch, a ⭐️ on GitHub helps other people find it.
+
 ## License
 
-MIT
+Released under the [MIT License](LICENSE).
