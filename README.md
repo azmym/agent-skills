@@ -49,6 +49,7 @@ If you've ever wanted your agent to "just read that Slack thread" or "tell me wh
 - [Available Skills](#available-skills)
   - [Slack](#slack)
   - [Setup Check](#setup-check)
+  - [Used](#used)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -342,6 +343,64 @@ You can combine scopes. For example, `/setup-check skills plugins` runs both.
 | "Find overlaps between my skills and plugins" | Runs the `overlaps` cross-category detector |
 | `/setup-check updates` | CLI and plugin update status only |
 | `/setup-check skills hooks` | Audits just those two categories |
+
+---
+
+### Used
+
+Ever wondered which skills, hooks, rules, plugins, or MCP tools your agent actually reached for on the last prompt? `Used` answers exactly that. It's a transparency skill: one command, and you get a clean report of what fired and what didn't.
+
+Great for debugging "why did it do that?" moments, auditing your setup after a long session, or just satisfying curiosity.
+
+#### When your agent will use this skill
+
+- You ask "what was used?", "which skills ran?", or "show me what fired"
+- You invoke `/used` directly (last prompt) or `/used --session` (whole session)
+- You want a quick audit of MCP tools invoked vs. merely available
+
+#### Install
+
+```bash
+npx skills add https://github.com/azmym/agent-skills --skill used
+```
+
+#### Arguments
+
+Invoke as `/used [session]`. Default scope is the last exchange.
+
+| Arg | Scope |
+|-----|-------|
+| (none) | Last user prompt and the immediate response only |
+| `session` or `--session` | The entire conversation since the last `/clear` |
+
+#### What gets reported
+
+- **Skills**: every skill your agent invoked (including plugin-namespaced skills like `superpowers:brainstorming`)
+- **Hooks**: hooks that injected context (SessionStart, UserPromptSubmit, and so on)
+- **Rules**: loaded `CLAUDE.md` and `~/.claude/rules/*.md` entries
+- **Plugins**: split into "active" (had a skill invoked) vs. "tools-only" (only contributed MCP tools)
+- **MCP tools**: which tools were actually called, grouped by server (not just loaded)
+
+#### Sample output
+
+```
+Last Prompt Usage  [2 skills | 1 hook | 3 rules | 1 plugin | 2 mcp tools]
+--------------------------------------------------------------
+Skills:     using-superpowers, writing-plans
+Hooks:      user-prompt-submit
+Rules:      ask-before-acting, no-dashes, pr-labeling
+Plugins:    superpowers (using-superpowers, writing-plans)
+MCP Tools:  github (create_pull_request, get_file_contents)
+```
+
+#### Usage examples
+
+| You say | What happens |
+|---------|--------------|
+| `/used` | Reports what fired on the last prompt |
+| `/used --session` | Reports everything that fired since the last `/clear` |
+| "What skills ran for that last answer?" | Same as `/used` |
+| "Show me every MCP tool we've called this session" | Runs in session mode and highlights the MCP Tools row |
 
 ## Contributing
 
